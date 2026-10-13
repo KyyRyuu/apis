@@ -1,5 +1,5 @@
 /*
- * KuroNeko API | sylvatica.my.id
+ * K-APIs | sylvatica.my.id
  * © Dandy
  */
 import 'dotenv/config';
@@ -203,6 +203,24 @@ app.get('/ai/:model', (req: Request, res: Response) => {
 app.get('/download/:name', (req: Request, res: Response) => {
     return res.sendFile(
         path.join(process.cwd(), 'public', 'download', 'download.html')
+    );
+});
+
+app.get('/search', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'search', 'search.html')
+    );
+});
+
+app.get('/api/search', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'search', 'search.html')
+    );
+});
+
+app.get('/search/:name', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'search', 'search.html')
     );
 });
 

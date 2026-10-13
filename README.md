@@ -2,7 +2,7 @@
 
 <img src="https://c.termai.cc/i191/f9nlM5.jpg" alt="KuroNeko API Banner" width="100%" />
 
-# KuroNeko API
+# K-APIs (KZY APIs)
 
 **Simple, Fast, and Dynamic REST API Base built with Express & TypeScript.**
 
@@ -19,7 +19,7 @@
 
 ## Introduction
 
-**KuroNeko API** adalah template dasar untuk membangun REST API menggunakan **Express.js** dan **TypeScript**.
+**K-APIs** adalah template dasar untuk membangun REST API menggunakan **Express.js** dan **TypeScript**.
 
 Project ini dirancang dengan struktur modular sehingga endpoint dapat ditambahkan, dikelola, dan dikembangkan tanpa perlu mengubah file utama `index.ts`.
 
@@ -56,7 +56,7 @@ Project ini dirancang dengan struktur modular sehingga endpoint dapat ditambahka
 
 ## Rate Limiter
 
-KuroNeko API menggunakan **IP-based rate limiter** dan tidak membutuhkan database.
+K-APIs menggunakan **IP-based rate limiter** dan tidak membutuhkan database.
 
 ### Default Configuration
 
@@ -153,7 +153,7 @@ Rate limiter dipasang secara global sehingga berlaku untuk seluruh endpoint yang
 
 ## Build System
 
-KuroNeko API menggunakan **TypeScript** sebagai source code.
+K-APIs menggunakan **TypeScript** sebagai source code.
 
 Saat project di-build, TypeScript akan dikompilasi menjadi JavaScript dan disimpan di folder `dist/`.
 
@@ -245,7 +245,8 @@ Contoh:
 ```json
 {
   "settings": {
-    "creator": "Danzz"
+    "creator": "IkyyKzy",
+    "baseBy": "Base By Danzz"
   },
   "tags": {}
 }
@@ -686,6 +687,6 @@ Silakan sesuaikan endpoint, konfigurasi, dan tampilan sesuai kebutuhan project.
 
 <div align="center">
 
-Created with ❤️ by **Danzz**
+Created by **IkyyKzy** • Base By **Danzz**
 
 </div>

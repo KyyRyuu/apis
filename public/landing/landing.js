@@ -56,7 +56,7 @@ function line(html, cls) {
 }
 async function bootLog(routes) {
   $('termLog').innerHTML = '';
-  line('$ kuroneko --boot', 'c');
+  line('$ k-apis --boot', 'c');
   await sleep(reduced ? 0 : 300);
   line('』 backend online :: express + typescript', 'd');
   for (const r of routes.slice(0, 10)) {
@@ -106,14 +106,14 @@ async function load() {
   let cfg = null;
   try { cfg = await (await fetch('/config')).json(); } catch {}
   const s = (cfg && cfg.settings) || {};
-  const name = s.apiName || 'KuroNeko';
+  const name = s.apiName || 'K-APIs';
   document.title = `${name} — API Platform`;
   $('dashTitle').textContent = name;
   $('srvMotd').textContent = s.description ? (s.description.length > 90 ? s.description.slice(0, 90) + '…' : s.description) : 'Reliable API for modern apps.';
   $('dashDesc').textContent = s.description || 'Free & reliable API service for modern apps. Fast, stable, easy to integrate.';
   $('verBadge').textContent = s.apiVersion || 'v1.0';
   $('motdVer').textContent = s.apiVersion || 'v1.0';
-  $('footCreator').textContent = (cfg && cfg.creator) || s.creator || 'Danzz';
+  $('footCreator').textContent = (cfg && cfg.creator) || s.creator || 'IkyyKzy';
   $('footYear').textContent = new Date().getFullYear();
   const th = $('dashThumb');
   th.src = s.favicon || s.thumbnail || '';
@@ -146,7 +146,7 @@ async function load() {
   else pick.forEach((r, i) => {
     const a = document.createElement('a');
     a.className = 'ep rv';
-    a.href = r.cat === 'ai' ? '/ai' : r.cat === 'download' ? '/download' : '/docs';
+    a.href = r.cat === 'ai' ? '/ai' : r.cat === 'download' ? '/download' : r.cat === 'search' ? '/search' : '/docs';
     const mc = r.method === 'POST' ? 'post' : r.method === 'DELETE' ? 'delete' : r.method === 'GET' ? '' : 'other';
     a.innerHTML = `<span class="idx">0${i + 1}</span><div class="ep-top"><span class="mbadge ${mc}">${r.method || 'GET'}</span><span class="ep-cat">${r.cat}</span></div><h3>${r.name || r.endpoint}</h3><code>${r.endpoint}</code><p>${(r.params || []).length ? r.params.length + ' params' : 'No params'} — open in docs →</p>`;
     grid.appendChild(a);

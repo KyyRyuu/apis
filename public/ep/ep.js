@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const SECTIONS = { ai: '/ai', download: '/download' };
+const SECTIONS = { ai: '/ai', download: '/download', search: '/search' };
 
 let toastT;
 function toast(msg) {
@@ -25,7 +25,7 @@ function hl(json) {
 }
 
 function notFound(cat, ep) {
-  document.title = 'Not found — KuroNeko';
+  document.title = 'Not found — K-APIs';
   $('crumbs').innerHTML = `<a href="/">HOME</a><span>/</span><a href="/docs">DOCS</a><span>/</span><b>404</b>`;
   $('epCard').innerHTML = `<div class="notfound"><h1>404 // NO SUCH ROUTE</h1><p>/${esc(cat)}/${esc(ep)} tidak terdaftar.</p><p style="margin-top:16px"><a class="btn sm" href="/docs" style="text-decoration:none">BACK TO DOCS</a></p></div>`;
 }
@@ -59,7 +59,17 @@ async function execRoute(btn, route) {
     st.textContent = r.status + ' ' + r.statusText;
     dot.className = 'sdot ' + (r.ok ? 'g' : 'r');
     const ct = r.headers.get('content-type') || '';
-    if (ct.includes('json')) body.innerHTML = hl(await r.json());
+    if (ct.includes('json')) {
+      const j = await r.json();
+      const direct = j && typeof j.result === 'string' && /^https?:\/\//.test(j.result) ? j.result : null;
+      body.innerHTML = (direct
+        ? `<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"><a class="btn sm" href="${esc(direct)}" target="_blank" rel="noopener" style="text-decoration:none">OPEN LINK</a><button class="btn sm" id="epCopyLink" type="button">COPY</button></div>`
+        : '') + hl(j);
+      const cb = document.getElementById('epCopyLink');
+      if (cb && direct) cb.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(direct); toast('Link disalin'); } catch {}
+      });
+    }
     else if (ct.startsWith('image')) {
       const blob = await r.blob();
       body.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="result">`;
@@ -83,7 +93,7 @@ async function load() {
     setPill(true, 'ONLINE');
     if (!route) { notFound(cat, ep); setPill(true, 'ONLINE'); return; }
 
-    document.title = `${route.name} — KuroNeko`;
+    document.title = `${route.name} — K-APIs`;
     const method = (route.method || 'GET').toUpperCase();
     const mc = method === 'POST' ? 'post' : method === 'DELETE' ? 'delete' : method === 'GET' ? '' : 'other';
     const secLink = SECTIONS[cat] ? `<a href="${SECTIONS[cat]}" title="Buka halaman ${esc(cat)}"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${esc(cat.toUpperCase())}</a>` : '';

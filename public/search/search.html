@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-APIs | Search</title>
+<meta name="description" content="K-APIs Search — YouTube and Pinterest results, beautifully rendered.">
+<meta name="theme-color" content="#0a0a0a">
+<link id="favicon" rel="icon" href="">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Syne:wght@700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/search/search.css">
+</head>
+<body>
+<a href="#qInput" class="skip">Skip to search</a>
+<div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div></div>
+
+<header class="topbar">
+  <div class="bar-inner">
+    <a href="/" class="brand" aria-label="Back home">
+      <span class="mark" aria-hidden="true">KZ</span>
+      <span class="brand-tx"><span id="nav-title" class="brand-nm">K-APIs</span><span class="brand-sb">SEARCH</span></span>
+    </a>
+    <span id="statusPill" class="pill"><span class="dot"></span><span id="statusPillTxt">CONNECTING</span></span>
+    <div class="bar-actions">
+      <a href="/" class="iconbtn" aria-label="Home"><i class="fa-solid fa-house"></i></a>
+      <a href="/ai" class="iconbtn" aria-label="AI Chat"><i class="fa-solid fa-message"></i></a>
+      <a href="/download" class="iconbtn" aria-label="Downloader"><i class="fa-solid fa-download"></i></a>
+      <a href="/docs" class="iconbtn" aria-label="Docs"><i class="fa-solid fa-book"></i></a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap layout">
+  <section aria-label="Search">
+    <div class="hero card">
+      <p class="kicker">// FIND ANYTHING</p>
+      <h1 id="searchTitle">SEARCH</h1>
+      <p class="sub" id="searchSub">YouTube videos &amp; Pinterest pins, rendered pretty.</p>
+      <div class="pickrow">
+        <div class="modelpick">
+          <label for="modelSel">ENGINE</label>
+          <select id="modelSel" aria-label="Pilih engine"></select>
+        </div>
+      </div>
+      <form id="qForm" class="qbar" autocomplete="off">
+        <i class="fa-solid fa-magnifying-glass qic"></i>
+        <input id="qInput" type="search" placeholder="Ketik pencarian…" aria-label="Kata kunci" maxlength="200">
+        <button class="btn pri" type="submit" id="qGo"><i class="fa-solid fa-magnifying-glass"></i> <span>GO</span></button>
+      </form>
+      <div class="chips" id="sampleChips"></div>
+    </div>
+    <div id="qProg" class="prog card" hidden><div class="spin"></div><p>Searching…</p></div>
+    <div id="qErr" class="err card" hidden>
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div><b>FAILED</b><p id="qErrMsg">error</p></div>
+    </div>
+    <p id="qMeta" class="meta" hidden></p>
+    <div id="qGrid" class="ytgrid"></div>
+    <div id="qPins" class="pins"></div>
+    <div id="qRaw" class="raw card" hidden><div class="raw-bd" id="qRawBd"></div></div>
+    <p class="hint">Mau test mentah via JSON? Buka di <a href="/docs?cat=search">docs → search</a>.</p>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"><div class="toast-in"><i class="fa-solid fa-check"></i><span id="toastMsg">Copied</span></div></div>
+<script src="/search/search.js"></script>
+</body>
+</html>

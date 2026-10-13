@@ -24,23 +24,8 @@ function hl(json) {
   });
 }
 
-/* tabs */
-const tabSv = $('tab-saver'), tabEp = $('tab-eps');
-function showTab(which) {
-  const isEp = which === 'eps';
-  tabSv.classList.toggle('active', !isEp);
-  tabEp.classList.toggle('active', isEp);
-  tabSv.setAttribute('aria-selected', String(!isEp));
-  tabEp.setAttribute('aria-selected', String(isEp));
-  $('view-saver').hidden = isEp;
-  $('view-eps').hidden = !isEp;
-  try { if (/^\/download\/?(#endpoints)?$/.test(location.pathname)) history.replaceState(null, '', isEp ? '/download#endpoints' : '/download'); } catch {}
-}
-tabSv.addEventListener('click', () => showTab('saver'));
-tabEp.addEventListener('click', () => showTab('eps'));
-
 /* ---------- SAVER ---------- */
-const STEPS = ['Fetching post…', 'Parsing SSR payload…', 'Resolving CDN links…', 'Verifying files…'];
+const STEPS = ['Fetching…', 'Parsing payload…', 'Resolving links…', 'Verifying files…'];
 const THREAD_SAMPLES = [
   ['cth: foto', 'https://www.threads.com/share/BAFMYe__aO/'],
   ['cth: video', 'https://www.threads.com/share/BAo4O5AVfz/'],
@@ -77,8 +62,7 @@ function dlBtn(href, label, fname) {
   return `<a class="btn grn sm" href="${esc(href)}" download="${esc(fname)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> ${esc(label)}</a>`;
 }
 
-function renderResult(j) {
-  const box = $('dlResult');
+function renderThreads(j) {
   const u = j.url || {};
   const videos = u.video ? [u.video] : (u.videos || []);
   const audios = u.audio ? [u.audio] : (u.audios || []);
@@ -114,7 +98,7 @@ function renderResult(j) {
     `<div style="padding:8px 0;border-top:1px solid var(--line);font-size:12.5px"><b>@${esc(c.username || '?')}</b> <span style="color:var(--mut)">♥${fmtNum(c.like_count)}</span><br>${esc(c.text || '')}</div>`
   ).join('');
 
-  box.innerHTML = `
+  return `
     <div class="r-hd">
       ${a.profile_pic_url ? `<img src="${esc(a.profile_pic_url)}" alt="avatar" loading="lazy">` : ''}
       <div class="r-who">
@@ -142,14 +126,36 @@ function renderResult(j) {
       <span class="${ver.all_cdn_ok ? 'vok' : 'vbad'}">${ver.all_cdn_ok ? 'ALL OK' : 'CHECK FAILED'}</span>
       <span>• id ${esc(String(pid))}</span>
     </div>`;
+}
+
+function renderGeneric(j) {
+  const r = j.result !== undefined ? j.result : j;
+  let action = '';
+  if (typeof r === 'string' && /^https?:\/\//.test(r)) {
+    action = `<div class="r-actions"><a class="btn grn sm" href="${esc(r)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> OPEN LINK</a><button class="btn sm" id="copyResBtn" type="button"><i class="fa-solid fa-copy"></i> COPY</button></div>`;
+  }
+  return `<p class="r-cap">RAW RESPONSE</p><div style="padding:0 20px 6px"><div class="ai-out-bd" style="border:1px solid var(--line);border-radius:10px;padding:14px">${hl(j)}</div></div>${action}`;
+}
+
+function renderResult(j) {
+  const box = $('dlResult');
+  const isThreads = j && j.url && (j.post_id || j.author || j.stats);
+  box.innerHTML = isThreads ? renderThreads(j) : renderGeneric(j);
   box.hidden = false;
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-  const allLinks = [...videos, ...images, ...(thumb ? [thumb] : []), ...audios];
-  $('copyAllBtn').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(allLinks.join('\n')); toast(allLinks.length + ' link disalin'); }
-    catch { toast('Copy gagal'); }
+  const allLinks = [];
+  box.querySelectorAll('a[download]').forEach((a) => allLinks.push(a.href));
+  const cAll = $('copyAllBtn');
+  if (cAll) cAll.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(allLinks.join('\n')); toast(allLinks.length + ' link disalin'); } catch {}
   });
+  const cRes = $('copyResBtn');
+  if (cRes) {
+    const r = (j.result !== undefined ? j.result : j);
+    cRes.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(typeof r === 'string' ? r : JSON.stringify(r)); toast('Disalin'); } catch {}
+    });
+  }
 }
 
 async function runSaver(rawUrl) {
@@ -172,7 +178,6 @@ async function runSaver(rawUrl) {
     clearInterval(stepTimer);
     prog.hidden = true;
     if (!r.ok || j.status === false || j.success === false) throw new Error(j.message || ('HTTP ' + r.status));
-    if (!j.url) throw new Error('Respon tidak berisi URL media');
     renderResult(j);
   } catch (e) {
     clearInterval(stepTimer);
@@ -183,101 +188,21 @@ async function runSaver(rawUrl) {
 }
 $('dlForm').addEventListener('submit', (e) => { e.preventDefault(); runSaver($('dlInput').value); });
 
-/* ---------- ENDPOINT CARDS ---------- */
-let dlRoutes = [];
-async function execRoute(btn, route, i) {
-  if (btn.disabled) return;
-  const params = {};
-  (route.params || []).forEach((p) => {
-    const el = document.getElementById(`dl-${i}-${p.name}`);
-    if (el && el.value) params[p.name] = el.value;
-  });
-  const missing = (route.params || []).filter((p) => p.required && !params[p.name]);
-  if (missing.length) { toast('Isi dulu: ' + missing.map((p) => p.name).join(', ')); return; }
-  const out = $(`dl-out-${i}`), body = $(`dl-body-${i}`), dot = $(`dl-dot-${i}`), st = $(`dl-st-${i}`), ms = $(`dl-ms-${i}`);
-  btn.disabled = true;
-  out.hidden = false;
-  dot.className = 'sdot';
-  st.textContent = 'SENDING…';
-  body.textContent = 'connecting…';
-  const method = (route.method || 'GET').toUpperCase();
-  let url = route.endpoint;
-  const opts = { method };
-  if (method === 'GET' && Object.keys(params).length) url += '?' + new URLSearchParams(params);
-  if (method !== 'GET') { opts.headers = { 'Content-Type': 'application/json' }; opts.body = JSON.stringify(params); }
-  const t0 = Date.now();
-  const tick = setInterval(() => { ms.textContent = (Date.now() - t0) + 'ms'; }, 60);
-  try {
-    const r = await fetch(url, opts);
-    clearInterval(tick);
-    ms.textContent = (Date.now() - t0) + 'ms';
-    st.textContent = r.status + ' ' + r.statusText;
-    dot.className = 'sdot ' + (r.ok ? 'g' : 'r');
-    const ct = r.headers.get('content-type') || '';
-    if (ct.includes('json')) body.innerHTML = hl(await r.json());
-    else body.textContent = await r.text();
-  } catch (e) {
-    clearInterval(tick);
-    st.textContent = 'ERR';
-    dot.className = 'sdot r';
-    body.textContent = 'CONNECTION_REFUSED: ' + e.message;
-  } finally { btn.disabled = false; }
-}
-function renderEps() {
-  const box = $('dlList');
-  $('dlCount').textContent = dlRoutes.length;
-  box.innerHTML = '';
-  if (!dlRoutes.length) { box.innerHTML = '<p style="color:var(--mut)">Belum ada endpoint downloader.</p>'; return; }
-  dlRoutes.forEach((r, i) => {
-    const card = document.createElement('article');
-    card.className = 'aicard';
-    const inputs = (r.params || []).map((p) => `
-      <div class="field">
-        <label>${esc(p.name)} ${p.required ? '<b>*required</b>' : '<span>opsional</span>'}</label>
-        <input id="dl-${i}-${esc(p.name)}" type="text" placeholder="${esc(p.description || p.name)}">
-      </div>`).join('');
-    card.innerHTML = `
-      <div class="ai-hd">
-        <span class="ai-cat">DOWNLOAD / SAVER ${i + 1}</span>
-        <div class="ai-title"><span class="mbadge">${esc((r.method || 'GET').toUpperCase())}</span><h3>${esc(r.name || r.endpoint)}</h3><code>${esc(r.endpoint)}</code></div>
-      </div>
-      <div class="ai-params">${inputs}</div>
-      <div class="ai-ft">
-        <button class="btn pri sm" data-exec="${i}"><i class="fa-solid fa-play"></i> EXECUTE</button>
-        <button class="btn sm" data-send="${i}"><i class="fa-solid fa-download"></i> SEND TO SAVER</button>
-      </div>
-      <div class="ai-out" id="dl-out-${i}" hidden>
-        <div class="ai-out-hd"><span class="sdot" id="dl-dot-${i}"></span><span id="dl-st-${i}">—</span><span class="ms" id="dl-ms-${i}">—</span></div>
-        <div class="ai-out-bd" id="dl-body-${i}"></div>
-      </div>`;
-    box.appendChild(card);
-  });
-  box.querySelectorAll('[data-exec]').forEach((b) => b.addEventListener('click', () => execRoute(b, dlRoutes[+b.dataset.exec], +b.dataset.exec)));
-  box.querySelectorAll('[data-send]').forEach((b) => b.addEventListener('click', () => {
-    const r = dlRoutes[+b.dataset.send];
-    setSaver(r);
-    const inp = document.getElementById(`dl-${(+b.dataset.send)}-url`);
-    if (inp && inp.value) { $('dlInput').value = inp.value; showTab('saver'); runSaver(inp.value); }
-    else { showTab('saver'); $('dlInput').focus(); }
-  }));
-}
-
 /* boot */
 async function load() {
   try {
     const cfg = await (await fetch('/config')).json();
     if (cfg.settings?.favicon) $('favicon').href = cfg.settings.favicon;
-    if (cfg.settings?.apiName) $('nav-title').textContent = 'KURO//NEKO';
-    dlRoutes = ((cfg.tags || {}).download || []).map((r) => ({ cat: 'download', ...r }));
-    renderEps();
+    if (cfg.settings?.apiName) document.title = `${cfg.settings.apiName} | Downloader`;
+    const routes = ((cfg.tags || {}).download || []).map((r) => ({ cat: 'download', ...r }));
     const segs = location.pathname.split('/').filter(Boolean);
-    const deep = segs.length >= 2 && segs[0] === 'download' ? dlRoutes.find((r) => r.filename === segs[1]) : null;
-    setSaver(deep || dlRoutes[0] || null);
+    const deep = segs.length >= 2 && segs[0] === 'download' ? routes.find((r) => r.filename === segs[1]) : null;
+    setSaver(deep || routes[0] || null);
     setPill(true, 'ONLINE');
   } catch (e) {
-    $('dlList').innerHTML = '<p style="color:var(--acc)">Gagal memuat config: ' + esc(e.message) + '</p>';
     setPill(false, 'OFFLINE');
+    $('dlErrMsg').textContent = 'Gagal memuat config: ' + e.message;
+    $('dlErr').hidden = false;
   }
-  if (location.hash === '#endpoints') showTab('eps');
 }
 load();

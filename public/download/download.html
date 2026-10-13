@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KuroNeko | Downloader</title>
-<meta name="description" content="KuroNeko Downloader — paste a Threads link, preview media, grab the files.">
+<title>K-APIs | Downloader</title>
+<meta name="description" content="K-APIs Downloader — paste a link, preview media, grab the files.">
 <meta name="theme-color" content="#0a0a0a">
 <link id="favicon" rel="icon" href="">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -21,53 +21,42 @@
 <header class="topbar">
   <div class="bar-inner">
     <a href="/" class="brand" aria-label="Back home">
-      <span class="mark" aria-hidden="true">KN</span>
-      <span class="brand-tx"><span id="nav-title" class="brand-nm">KURO//NEKO</span><span class="brand-sb">DOWNLOADER</span></span>
+      <span class="mark" aria-hidden="true">KZ</span>
+      <span class="brand-tx"><span id="nav-title" class="brand-nm">K-APIs</span><span class="brand-sb">DOWNLOADER</span></span>
     </a>
     <span id="statusPill" class="pill"><span class="dot"></span><span id="statusPillTxt">CONNECTING</span></span>
     <div class="bar-actions">
       <a href="/" class="iconbtn" aria-label="Home"><i class="fa-solid fa-house"></i></a>
-      <a href="/ai" class="iconbtn" aria-label="AI Zone"><i class="fa-solid fa-message"></i></a>
+      <a href="/ai" class="iconbtn" aria-label="AI Chat"><i class="fa-solid fa-message"></i></a>
+      <a href="/search" class="iconbtn" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></a>
       <a href="/docs" class="iconbtn" aria-label="Docs"><i class="fa-solid fa-book"></i></a>
-    </div>
-  </div>
-  <div class="tabs" role="tablist" aria-label="Downloader views">
-    <div class="wrap tabs-in">
-      <button id="tab-saver" class="tab active" role="tab" aria-selected="true" aria-controls="view-saver"><i class="fa-solid fa-download"></i> SAVER</button>
-      <button id="tab-eps" class="tab" role="tab" aria-selected="false" aria-controls="view-eps"><i class="fa-solid fa-list"></i> ENDPOINTS <span class="cnt" id="dlCount">–</span></button>
     </div>
   </div>
 </header>
 
 <main class="wrap layout">
-  <!-- SAVER -->
-  <section id="view-saver" role="tabpanel" aria-labelledby="tab-saver">
+  <section aria-label="Downloader">
     <div class="hero card">
       <p class="kicker">// PASTE. PREVIEW. SAVE.</p>
-      <h1 id="saverTitle">THREADS SAVER</h1>
-      <p class="sub" id="saverSub">Tempel link Threads, intip medianya, gas download — video, foto, carousel, semua kebawa.</p>
+      <h1 id="saverTitle">SAVER</h1>
+      <p class="sub" id="saverSub">Tempel link, intip hasilnya, gas download.</p>
       <form id="dlForm" class="dlbar" autocomplete="off">
         <i class="fa-solid fa-link dlic"></i>
-        <input id="dlInput" type="url" inputmode="url" placeholder="https://www.threads.com/…/post/…" aria-label="Threads URL">
+        <input id="dlInput" type="url" inputmode="url" placeholder="https://…" aria-label="Media URL">
         <button class="btn pri" type="submit" id="dlGo"><i class="fa-solid fa-download"></i> <span>GO</span></button>
       </form>
-      <div class="chips" id="sampleChips">
+      <div class="chips" id="sampleChips"></div>
     </div>
     <div id="dlProg" class="prog card" hidden>
       <div class="spin"></div>
-      <p id="dlProgTxt">Fetching post…</p>
+      <p id="dlProgTxt">Fetching…</p>
     </div>
     <div id="dlErr" class="err card" hidden>
       <i class="fa-solid fa-triangle-exclamation"></i>
       <div><b>FAILED</b><p id="dlErrMsg">error</p></div>
     </div>
     <article id="dlResult" class="result card" hidden aria-label="Hasil download"></article>
-  </section>
-
-  <!-- ENDPOINTS -->
-  <section id="view-eps" role="tabpanel" aria-labelledby="tab-eps" hidden>
-    <div class="shead"><div><p class="kicker">// ALL SAVERS</p><h2>ENDPOINTS</h2></div></div>
-    <div id="dlList" class="ailist"><div class="skel"></div></div>
+    <p class="hint">Mau test mentah via JSON? Buka di <a href="/docs?cat=download">docs → download</a>.</p>
   </section>
 </main>
 

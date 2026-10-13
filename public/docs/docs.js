@@ -42,7 +42,7 @@ async function init() {
         startWIBClock();
         initBattery();
         initDevice();
-        await kuroneko(globalConfig);
+        await runBoot(globalConfig);
         setSearch();
         mcExtras(globalConfig);
         openCatFromUrl();
@@ -262,7 +262,7 @@ function terminalLog(message, type = "info") {
     logs.scrollTop = logs.scrollHeight;
 }
 
-async function kuroneko(config) {
+async function runBoot(config) {
     const logs = document.getElementById("term-logs");
 
     if (!logs) return;
@@ -291,7 +291,7 @@ async function kuroneko(config) {
 
     const ver = config.settings.apiVersion || "1.0.0";
 
-    terminalLog(`> kuroneko-api@${ver} dev`, "system");
+    terminalLog(`> k-apis@${ver} dev`, "system");
     terminalLog("> ts-node src/index.ts", "system");
 
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -445,7 +445,7 @@ function buildResponseExamples() {
     return {
         success: JSON.stringify(
             {
-                creator: "Danzz",
+                creator: "IkyyKzy",
                 status: true,
                 result: [
                     {
@@ -465,7 +465,7 @@ function buildResponseExamples() {
 
         error: JSON.stringify(
             {
-                creator: "Danzz",
+                creator: "IkyyKzy",
                 status: false,
                 message: "Internal server error"
             },
@@ -475,7 +475,7 @@ function buildResponseExamples() {
 
         ratelimit: JSON.stringify(
             {
-                creator: "Danzz",
+                creator: "IkyyKzy",
                 status: false,
                 message: "Too many requests. You are temporarily banned"
             },
@@ -536,7 +536,7 @@ function renderIntro(config) {
         ? firstRoute.endpoint
         : "/api/info/ping";
 
-    const apiName = config.settings.apiName || "KuroNeko API";
+    const apiName = config.settings.apiName || "K-APIs";
 
     exampleSnippets = buildExampleSnippets(
         origin,
@@ -756,7 +756,7 @@ function buildSidebarTree(tags) {
 
     for (const [cat, routes] of Object.entries(tags)) {
         const catId = `cat-${cat.replace(/\s+/g, "-")}`;
-        const secUrl = cat === "ai" ? "/ai" : cat === "download" ? "/download" : `/docs?cat=${encodeURIComponent(cat)}`;
+        const secUrl = cat === "ai" ? "/ai" : cat === "download" ? "/download" : cat === "search" ? "/search" : `/docs?cat=${encodeURIComponent(cat)}`;
         const wrap = document.createElement("div");
 
         wrap.className = "folder-wrap";
@@ -862,7 +862,7 @@ window.toggleFolder = catId => {
         .classList.toggle("rotate-180");
 };
 
-const SECTION_URL = { ai: "/ai", download: "/download" };
+const SECTION_URL = { ai: "/ai", download: "/download", search: "/search" };
 
 function catRoutes(cat) {
     return Object.entries(routesById)
