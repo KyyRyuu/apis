@@ -24,8 +24,16 @@ function toast(msg) {
   toastT = setTimeout(() => $('toast').classList.remove('show'), 2600);
 }
 $('copyIpBtn').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(location.origin); toast('URL copied to clipboard'); }
-  catch { toast(location.origin); }
+  const done = async (ok) => toast(ok ? 'URL copied to clipboard' : 'Copy gagal — salin manual: ' + location.origin);
+  try { await navigator.clipboard.writeText(location.origin); done(true); }
+  catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = location.origin; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      done(document.execCommand('copy')); ta.remove();
+    } catch { done(false); }
+  }
 });
 
 /* clock */
@@ -97,8 +105,17 @@ document.querySelectorAll('.ctab').forEach((btn) => {
   });
 });
 $('craftCopy').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('craftCode').textContent); toast('Snippet copied'); }
-  catch { toast('Copy failed'); }
+  const txt = $('craftCode').textContent;
+  try { await navigator.clipboard.writeText(txt); toast('Snippet copied'); }
+  catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      toast(document.execCommand('copy') ? 'Snippet copied' : 'Copy gagal — salin manual');
+      ta.remove();
+    } catch { toast('Copy gagal — salin manual'); }
+  }
 });
 
 /* data */

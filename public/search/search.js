@@ -103,7 +103,17 @@ function renderGeneric(j, q) {
 
 function wireCopy() {
   document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Link disalin'); } catch {}
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Link disalin'); }
+    catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = b.dataset.copy; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        if (document.execCommand('copy')) toast('Link disalin');
+        else toast('Copy gagal — salin manual');
+        ta.remove();
+      } catch { toast('Copy gagal — salin manual'); }
+    }
   }));
 }
 

@@ -19,6 +19,17 @@ function fmtText(s) {
     .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
     .replace(/\n/g, '<br>');
 }
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch { return false; }
+  }
+}
 
 /* playground */
 let aiRoutes = [];
@@ -38,7 +49,8 @@ function addMsg(role, html, raw) {
   d.innerHTML = `<span class="who">${role === 'me' ? 'YOU' : 'K-APIs'}</span><div class="bubble">${html}</div>
     <div class="meta"><button class="mini" type="button">COPY</button></div>`;
   d.querySelector('.mini').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(raw); toast('Pesan disalin'); } catch {}
+    if (await copyText(raw)) toast('Pesan disalin');
+    else toast('Copy gagal — salin manual');
   });
   box.appendChild(d);
   box.scrollTop = box.scrollHeight;

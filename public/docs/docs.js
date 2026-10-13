@@ -1295,22 +1295,43 @@ function setSearch() {
     });
 }
 
-window.copy = text => {
-    navigator.clipboard.writeText(
+async function copyText(t) {
+    try {
+        await navigator.clipboard.writeText(t);
+        return true;
+    } catch {
+        try {
+            const ta = document.createElement("textarea");
+            ta.value = t;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand("copy");
+            ta.remove();
+            return ok;
+        } catch {
+            return false;
+        }
+    }
+}
+
+window.copy = async text => {
+    const ok = await copyText(
         window.location.origin + text
     );
 
-    messeg("ENDPOINT COPIED");
+    messeg(ok ? "ENDPOINT COPIED" : "COPY GAGAL — SALIN MANUAL");
     terminalLog(`Copied URL: ${text}`);
 };
 
-window.copyRes = id => {
+window.copyRes = async id => {
     const out = document.getElementById(`output-${id}`);
 
     if (!out.innerText) return;
 
-    navigator.clipboard.writeText(out.innerText);
-    messeg("RESPONSE COPIED");
+    const ok = await copyText(out.innerText);
+    messeg(ok ? "RESPONSE COPIED" : "COPY GAGAL — SALIN MANUAL");
 };
 
 window.reset = id => {
@@ -1442,6 +1463,15 @@ window.testReq = async (btn, url, method, id) => {
         if (type?.includes("json")) {
             const json = await req.json();
             out.innerHTML = syntaxHighlight(json);
+
+            if (req.status === 429) {
+                out.innerHTML += `
+                    <br>
+                    <span class="text-amber-400 font-bold">
+                        Kena rate limit — tunggu ±1 menit lalu coba lagi. Jangan spam EXECUTE.
+                    </span>
+                `;
+            }
         } else if (type?.startsWith("image")) {
             const blob = await req.blob();
             const urlObj = URL.createObjectURL(blob);

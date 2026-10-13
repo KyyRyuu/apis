@@ -9,6 +9,17 @@ function toast(msg) {
   clearTimeout(toastT);
   toastT = setTimeout(() => $('toast').classList.remove('show'), 2600);
 }
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch { return false; }
+  }
+}
 function setPill(ok, txt) {
   $('statusPill').classList.toggle('err', !ok);
   $('statusPillTxt').textContent = txt;
@@ -147,13 +158,15 @@ function renderResult(j) {
   box.querySelectorAll('a[download]').forEach((a) => allLinks.push(a.href));
   const cAll = $('copyAllBtn');
   if (cAll) cAll.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(allLinks.join('\n')); toast(allLinks.length + ' link disalin'); } catch {}
+    if (await copyText(allLinks.join('\n'))) toast(allLinks.length + ' link disalin');
+    else toast('Copy gagal — salin manual');
   });
   const cRes = $('copyResBtn');
   if (cRes) {
     const r = (j.result !== undefined ? j.result : j);
     cRes.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(typeof r === 'string' ? r : JSON.stringify(r)); toast('Disalin'); } catch {}
+      if (await copyText(typeof r === 'string' ? r : JSON.stringify(r))) toast('Disalin');
+      else toast('Copy gagal — salin manual');
     });
   }
 }

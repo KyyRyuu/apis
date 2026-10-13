@@ -9,6 +9,17 @@ function toast(msg) {
   clearTimeout(toastT);
   toastT = setTimeout(() => $('toast').classList.remove('show'), 2600);
 }
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch { return false; }
+  }
+}
 function setPill(ok, txt) {
   $('statusPill').classList.toggle('err', !ok);
   $('statusPillTxt').textContent = txt;
@@ -67,7 +78,8 @@ async function execRoute(btn, route) {
         : '') + hl(j);
       const cb = document.getElementById('epCopyLink');
       if (cb && direct) cb.addEventListener('click', async () => {
-        try { await navigator.clipboard.writeText(direct); toast('Link disalin'); } catch {}
+        if (await copyText(direct)) toast('Link disalin');
+        else toast('Copy gagal — salin manual');
       });
     }
     else if (ct.startsWith('image')) {
@@ -122,7 +134,8 @@ async function load() {
       </div>`;
     $('execBtn').addEventListener('click', (e) => execRoute(e.currentTarget, route));
     $('copyBtn').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(location.origin + route.endpoint); toast('URL disalin'); } catch {}
+      if (await copyText(location.origin + route.endpoint)) toast('URL disalin');
+      else toast('Copy gagal — salin manual');
     });
   } catch (e) {
     setPill(false, 'OFFLINE');
