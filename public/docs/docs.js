@@ -44,6 +44,7 @@ async function init() {
         initDevice();
         await kuroneko(globalConfig);
         setSearch();
+        mcExtras(globalConfig);
         setPill(true, "ONLINE");
         observeReveals();
     } catch (e) {
@@ -89,6 +90,70 @@ document.addEventListener("keydown", (e) => {
         if (s) s.focus();
     }
 });
+
+let activeMethod = "ALL";
+
+function applyMethodFilter() {
+    const input = document.getElementById("search-input");
+    const q = ((input && input.value) || "").toLowerCase().trim();
+    const noResults = document.getElementById("no-results");
+    let anyVisible = false;
+
+    document.querySelectorAll(".folder-wrap").forEach((w) => {
+        const files = w.querySelector(".folder-files");
+        const arrow = w.querySelector(".folder-arrow");
+        let match = 0;
+
+        w.querySelectorAll(".file-item").forEach((f) => {
+            const badge = f.querySelector(".mini-badge");
+            const m = ((badge && badge.innerText) || "GET").trim();
+            const okM = activeMethod === "ALL" || m === activeMethod;
+            const okQ = !q || ((f.getAttribute("data-search") || "").includes(q));
+            const show = okM && okQ;
+            f.classList.toggle("hidden", !show);
+            if (show) match++;
+        });
+
+        if (match > 0) {
+            w.classList.remove("hidden");
+            anyVisible = true;
+            if (q || activeMethod !== "ALL") {
+                if (files) files.classList.remove("hidden");
+                if (arrow) arrow.classList.add("rotate-180");
+            }
+        } else {
+            w.classList.add("hidden");
+        }
+    });
+
+    if (noResults) {
+        noResults.classList.toggle("hidden", anyVisible);
+        noResults.classList.toggle("flex", !anyVisible);
+    }
+}
+
+function mcExtras(config) {
+    let n = 0;
+    Object.values((config && config.tags) || {}).forEach((a) => { n += ((a || []).length); });
+    const ep = document.getElementById("epCount");
+    if (ep) ep.innerText = n;
+
+    const splashes = ["Punch trees!", "Endermen approved!", "Herobrine removed!", "TNT-powered docs!", "Fresh chunks daily!", "Diamond-grade APIs!"];
+    const sp = document.getElementById("docSplash");
+    if (sp) sp.innerText = splashes[Math.floor(Math.random() * splashes.length)];
+
+    document.querySelectorAll(".mf").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".mf").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            activeMethod = btn.getAttribute("data-mfilter") || "ALL";
+            applyMethodFilter();
+        });
+    });
+
+    const si = document.getElementById("search-input");
+    if (si) si.addEventListener("input", () => setTimeout(applyMethodFilter, 0));
+}
 
 function startWIBClock() {
     const timeEl = document.getElementById("server-time");
@@ -524,22 +589,22 @@ function renderIntro(config) {
         <div class="mb-5">
             <h2
                 class="font-black text-xl"
-                style="color:#1E1B4B"
+                style="color:#f2f2e9"
             >
-                Introduction
+                Crafting Guide
             </h2>
 
             <p
                 class="text-xs font-bold"
                 style="color:#94A3B8"
             >
-                Quick guide to using ${apiName}
+                Spawn guide to using ${apiName}
             </p>
         </div>
 
         <p
             class="text-sm leading-relaxed font-semibold mb-6"
-            style="color:#475569"
+            style="color:#b8b49a"
         >
             Welcome to the ${apiName} documentation.
             Open the menu in the top-left corner to browse
@@ -549,7 +614,7 @@ function renderIntro(config) {
 
         <h3
             class="font-black text-sm mb-2"
-            style="color:#1E1B4B"
+            style="color:#f2f2e9"
         >
             Example Usage
         </h3>
@@ -565,7 +630,7 @@ function renderIntro(config) {
 
         <h3
             class="font-black text-sm mb-2"
-            style="color:#1E1B4B"
+            style="color:#f2f2e9"
         >
             Response Format
         </h3>
@@ -622,7 +687,7 @@ function renderIntro(config) {
 
         <h3
             class="font-black text-sm mb-2 mt-6"
-            style="color:#1E1B4B"
+            style="color:#f2f2e9"
         >
             Status Codes
         </h3>
@@ -677,7 +742,7 @@ function buildSidebarTree(tags) {
         </div>
 
         <span class="folder-title">
-            Introduction
+            Spawn Point
         </span>
     `;
 
@@ -908,7 +973,7 @@ function renderEndpointCard(route, id) {
             onclick="backToIntro()"
         >
             <i class="fa-solid fa-arrow-left"></i>
-            Semua Endpoint
+            Recipe Book
         </button>
 
         <div class="ep-card reveal in">
@@ -929,7 +994,7 @@ function renderEndpointCard(route, id) {
                     <div class="flex flex-col min-w-0">
                         <code
                             class="font-bold text-[13px] truncate"
-                            style="color:#1E1B4B"
+                            style="color:#f2f2e9"
                         >
                             ${route.endpoint}
                         </code>
@@ -948,7 +1013,7 @@ function renderEndpointCard(route, id) {
 
             <div
                 class="px-5 pb-5 flex gap-3 items-center border-t pt-4"
-                style="border-color:#F1F5F9"
+                style="border-color:#000"
             >
                 <button
                     id="btn-exec-${id}"

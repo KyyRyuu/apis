@@ -3,74 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KuroNeko | System Status</title>
-<meta name="description" content="Live KuroNeko server monitor — uptime, CPU, RAM, recent requests.">
+<title>KuroNeko | Server Stats</title>
+<meta name="description" content="Live KuroNeko debug screen — uptime, CPU, XP memory bar, chat log.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="/stats/stats.css">
 </head>
 <body>
-<a href="#reqList" class="skip">Lewati ke request log</a>
-<div class="bg" aria-hidden="true"><div class="orb orb-v"></div><div class="orb orb-c"></div><div class="grid-overlay"></div></div>
+<a href="#reqList" class="skip">Lewati ke chat log</a>
+<div class="bg" aria-hidden="true"></div>
 
 <nav class="topbar">
   <div class="bar-inner">
-    <a href="/" class="iconbtn" aria-label="Kembali"><i class="fa-solid fa-arrow-left text-sm"></i></a>
+    <a href="/" class="mcbtn icon" aria-label="Kembali"><i class="fa-solid fa-arrow-left"></i></a>
     <div class="titlebox">
-      <h1>System Status</h1>
-      <span class="sub">LIVE MONITOR • クロネコ</span>
+      <h1>DEBUG SCREEN</h1>
+      <span class="sub">F3 • KURO EDITION</span>
     </div>
-    <span class="live"><span class="pulse"></span><span id="liveTxt">LIVE</span></span>
-    <button id="pauseBtn" class="iconbtn" aria-label="Jeda auto-refresh" aria-pressed="false" title="Jeda / lanjutkan"><i class="fa-solid fa-pause text-sm"></i></button>
-    <a href="/docs" class="btn-primary">DOCS</a>
+    <span class="mc-badge live"><span class="pulse"></span><span id="liveTxt">LIVE</span></span>
+    <button id="pauseBtn" class="mcbtn icon" aria-label="Jeda auto-refresh" aria-pressed="false" title="Jeda / lanjutkan"><i class="fa-solid fa-pause"></i></button>
+    <a href="/docs" class="mcbtn small">DOCS</a>
   </div>
 </nav>
 
 <main class="layout">
+  <div class="hearts" aria-label="Server health">
+    <span class="hp-row" id="hpRow" title="Server health"></span>
+    <span class="hp-txt"><span id="hpTxt">20</span>/20 HP</span>
+  </div>
+
   <div class="cards3">
     <div class="stat reveal">
-      <div class="stat-top">
-        <div class="sic" style="--c:#34d399;--s:#059669"><i class="fa-solid fa-clock"></i></div>
-        <div><h3>Uptime</h3><p id="uptime" class="big"><span class="skel-line"></span></p></div>
-      </div>
-      <p class="hint">Updated <span id="updatedAt">—</span> • refresh 2s</p>
+      <h3><i class="fa-solid fa-clock"></i> UPTIME</h3>
+      <p id="uptime" class="big"><span class="skel-line"></span></p>
+      <p class="hint">Updated <span id="updatedAt">—</span> • 2s tick</p>
     </div>
     <div class="stat reveal">
-      <div class="stat-top">
-        <div class="sic" style="--c:#60a5fa;--s:#1d4ed8"><i class="fa-solid fa-server"></i></div>
-        <div><h3>Host</h3><p id="platform" class="big"><span class="skel-line"></span></p></div>
-      </div>
+      <h3><i class="fa-solid fa-server"></i> WORLD HOST</h3>
+      <p id="platform" class="big"><span class="skel-line"></span></p>
       <div class="chips"><span id="osBadge" class="chip">--</span><span id="arch" class="chip">--</span><span id="node-ver" class="chip acc">--</span></div>
     </div>
     <div class="stat reveal">
-      <div class="stat-top">
-        <div class="sic" style="--c:#fb7185;--s:#be123c"><i class="fa-solid fa-microchip"></i></div>
-        <div><h3>CPU Load</h3><p id="cpu-load" class="big">—</p></div>
-      </div>
+      <h3><i class="fa-solid fa-microchip"></i> REDSTONE LOAD</h3>
+      <p id="cpu-load" class="big">—</p>
       <p id="cpu-model" class="hint truncate">Detecting…</p>
     </div>
   </div>
 
   <div class="grid2">
     <div class="stat reveal">
-      <h2 class="sech"><i class="fa-solid fa-memory"></i> MEMORY USAGE</h2>
+      <h2 class="sech"><i class="fa-solid fa-bolt"></i> EXPERIENCE <span class="xplvl" id="memLevel">0</span></h2>
       <div class="memrow"><span>USED <strong id="mem-used">—</strong></span><span>TOTAL <strong id="mem-total">—</strong></span></div>
-      <div class="memtrack"><div id="ram-bar" class="memfill"><span id="ram-percent">0%</span></div></div>
+      <div class="xptrack"><div id="ram-bar" class="xpfill"><span id="ram-percent">0%</span></div></div>
       <p class="freeline">FREE <span id="mem-free">—</span></p>
       <canvas id="memSpark" width="520" height="64" aria-label="Grafik histori memori" role="img"></canvas>
       <div class="ministats">
-        <div><span>ENDPOINTS</span><strong id="epCount">—</strong></div>
-        <div><span>REQUESTS LOG</span><strong id="reqCount">0</strong></div>
-        <div><span>INTERVAL</span><strong>2s</strong></div>
+        <div><span>RECIPES</span><strong id="epCount">—</strong></div>
+        <div><span>CHAT LOG</span><strong id="reqCount">0</strong></div>
+        <div><span>SESSION</span><strong id="sessReq">0</strong></div>
       </div>
     </div>
     <div class="stat reveal">
-      <h2 class="sech"><i class="fa-solid fa-terminal"></i> RECENT REQUESTS <span id="reqDot" class="live sm"><span class="pulse"></span>TAIL</span></h2>
-      <div id="reqList" class="reqlist" aria-live="polite"><p class="hint">Menunggu data…</p></div>
-      <p class="hint">Menampilkan hingga 50 request API terakhir (query disamarkan). Halaman <code>/stats</code> sendiri tidak dicatat.</p>
+      <h2 class="sech"><i class="fa-solid fa-message"></i> MULTIPLAYER CHAT <span class="mc-badge sm"><span class="pulse"></span>TAIL</span></h2>
+      <div id="reqList" class="chatlog" aria-live="polite"><p class="hint">Waiting for players…</p></div>
+      <p class="hint">Max 50 baris terakhir. Query disamarkan &lt;param&gt;.</p>
     </div>
   </div>
 </main>

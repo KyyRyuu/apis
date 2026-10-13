@@ -7,12 +7,26 @@ document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
 
 let paused = false;
 let memHist = [];
+let sessTotal = 0;
+let lastSeen = 0;
+
+/* hearts */
+function renderHearts(pct) {
+  const row = $('hpRow');
+  row.innerHTML = '';
+  const full = Math.round(((100 - pct) / 100) * 10);
+  for (let i = 0; i < 10; i++) {
+    const h = document.createElement('span');
+    h.className = 'hp' + (i < full ? ' full' : '');
+    row.appendChild(h);
+  }
+  $('hpTxt').textContent = full * 2;
+}
 
 $('pauseBtn').addEventListener('click', () => {
   paused = !paused;
-  $('pauseBtn').innerHTML = paused ? '<i class="fa-solid fa-play text-sm"></i>' : '<i class="fa-solid fa-pause text-sm"></i>';
+  $('pauseBtn').innerHTML = paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
   $('pauseBtn').setAttribute('aria-pressed', String(paused));
-  $('pauseBtn').setAttribute('aria-label', paused ? 'Lanjutkan auto-refresh' : 'Jeda auto-refresh');
   document.querySelector('.live').classList.toggle('paused', paused);
   $('liveTxt').textContent = paused ? 'PAUSED' : 'LIVE';
   if (!paused) fetchStats();
@@ -27,21 +41,22 @@ function statusClass(line) {
   if (c >= 400) return 'warn';
   return 'ok';
 }
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 function renderRequests(reqs) {
   const box = $('reqList');
   $('reqCount').textContent = reqs.length;
-  if (!reqs.length) { box.innerHTML = '<p class="hint">Belum ada request API tercatat. Coba hit endpoint dari /docs.</p>'; return; }
-  const items = reqs.slice(-14).reverse();
+  if (reqs.length > lastSeen) { sessTotal += (reqs.length - lastSeen); $('sessReq').textContent = sessTotal; }
+  lastSeen = reqs.length;
+  if (!reqs.length) { box.innerHTML = '<p class="hint">Waiting for players…</p>'; return; }
   box.innerHTML = '';
-  items.forEach((r) => {
+  reqs.slice(-14).reverse().forEach((r) => {
+    const method = (r.match(/\[([A-Z]+)\]/) || [, 'GET'])[1];
+    const code = (r.match(/\[(\d{3})\]/) || [, '200'])[1];
+    const url = (r.split(' ').slice(2).join(' ') || r).replace(/^https?:\/\/[^/]+/, '');
     const d = document.createElement('div');
-    d.className = 'req';
-    const method = (r.match(/\[([A-Z]+)\]/) || [,'GET'])[1];
-    const code = (r.match(/\[(\d{3})\]/) || [,'200'])[1];
-    const url = r.split(' ').slice(2).join(' ') || r;
-    const short = url.replace(/^https?:\/\/[^/]+/, '');
-    d.innerHTML = `<span class="m">${method}</span><span class="c ${statusClass(r)}">${code}</span><span class="u" title="${url.replace(/"/g, '')}">${short}</span>`;
+    d.className = 'msg';
+    d.innerHTML = `<span class="t">&lt;server&gt;</span> <span class="m">[${method}]</span> <span class="${statusClass(r)}">${code}</span> <span class="u">${esc(url)}</span>`;
     box.appendChild(d);
   });
 }
@@ -52,17 +67,15 @@ function drawSpark() {
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height;
   ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#3a3d28';
+  for (let x = 0; x < W; x += 8) for (let y = 0; y < H; y += 8) ctx.fillRect(x, y, 2, 2);
   if (memHist.length < 2) {
-    ctx.fillStyle = '#615b7d'; ctx.font = '12px JetBrains Mono';
-    ctx.fillText('collecting…', 14, H / 2 + 4);
+    ctx.fillStyle = '#7a765c'; ctx.font = '16px VT323';
+    ctx.fillText('generating terrain…', 14, H / 2 + 6);
     return;
   }
-  ctx.strokeStyle = 'rgba(139,92,246,.25)';
-  ctx.lineWidth = 1;
-  for (let g = 1; g < 4; g++) { ctx.beginPath(); ctx.moveTo(0, (H / 4) * g); ctx.lineTo(W, (H / 4) * g); ctx.stroke(); }
-  const grad = ctx.createLinearGradient(0, 0, W, 0);
-  grad.addColorStop(0, '#8b5cf6'); grad.addColorStop(0.6, '#22d3ee'); grad.addColorStop(1, '#f472b6');
-  ctx.strokeStyle = grad; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#6abe30'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+  ctx.shadowColor = '#6abe30'; ctx.shadowBlur = 8;
   ctx.beginPath();
   memHist.forEach((v, i) => {
     const x = (i / (memHist.length - 1)) * (W - 8) + 4;
@@ -84,25 +97,26 @@ async function fetchStats() {
     $('osBadge').textContent = (s.platform || '—') + '';
     $('arch').textContent = s.arch;
     $('node-ver').textContent = s.node_version;
-    $('cpu-model').textContent = `${s.cpu.model} (${s.cpu.cores} cores • ${s.cpu.speed})`;
+    $('cpu-model').textContent = `${s.cpu.model} (${s.cpu.cores} cores)`;
     const loadPct = Math.min(100, Math.round(parseFloat(s.cpu.load) * 10));
-    $('cpu-load').textContent = (isNaN(loadPct) ? 0 : loadPct) + '%';
+    $('cpu-load').textContent = (isNaN(loadPct) ? 0 : loadPct) + '% redstone';
     $('mem-used').textContent = s.memory.used;
     $('mem-total').textContent = s.memory.total;
     $('mem-free').textContent = s.memory.free;
     const bar = $('ram-bar');
     bar.style.width = s.memory.percent + '%';
     $('ram-percent').textContent = s.memory.percent + '%';
+    $('memLevel').textContent = s.memory.percent;
     bar.classList.remove('warn', 'danger');
     if (s.memory.percent > 90) bar.classList.add('danger');
     else if (s.memory.percent > 70) bar.classList.add('warn');
+    renderHearts(s.memory.percent);
     memHist.push(s.memory.percent);
     if (memHist.length > 60) memHist.shift();
     drawSpark();
     renderRequests(data.requests || []);
     $('updatedAt').textContent = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false });
-    const live = $('liveTxt');
-    if (live && !paused) live.textContent = 'LIVE';
+    if (!paused) $('liveTxt').textContent = 'LIVE';
   } catch {}
 }
 
@@ -116,6 +130,7 @@ async function fetchEpCount() {
   } catch { $('epCount').textContent = '—'; }
 }
 
+renderHearts(25);
 fetchStats();
 fetchEpCount();
 setInterval(fetchStats, 2000);

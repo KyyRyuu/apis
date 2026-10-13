@@ -1,162 +1,148 @@
 const $ = (id) => document.getElementById(id);
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const SPLASHES = [
+  "100% creeper free!", "Now with 8 enchantments!", "Punch trees, get APIs!",
+  "Also try Terraria!", "Diamond-grade uptime!", "Respawn point set!",
+  "Watch out for phantoms!", "Endermen approved!", "32 chunks loaded!",
+  "Herobrine removed!", "TNT-powered routing!", "Fresh chunks daily!"
+];
 
 /* drawer */
 const drawer = $('drawer'), scrim = $('scrim'), menuBtn = $('menuBtn');
-function openDrawer() {
-  drawer.classList.add('open'); scrim.classList.add('show');
-  menuBtn.setAttribute('aria-expanded', 'true');
-  drawer.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-}
-function closeDrawer() {
-  drawer.classList.remove('open'); scrim.classList.remove('show');
-  menuBtn.setAttribute('aria-expanded', 'false');
-  drawer.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
+function openDrawer() { drawer.classList.add('open'); scrim.classList.add('show'); menuBtn.setAttribute('aria-expanded', 'true'); drawer.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; }
+function closeDrawer() { drawer.classList.remove('open'); scrim.classList.remove('show'); menuBtn.setAttribute('aria-expanded', 'false'); drawer.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; }
 menuBtn.addEventListener('click', openDrawer);
 $('drawerClose').addEventListener('click', closeDrawer);
 scrim.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
-/* share */
-$('shareBtn').addEventListener('click', async () => {
-  const btn = $('shareBtn');
-  const url = location.href;
-  try {
-    if (navigator.share) { await navigator.share({ title: document.title, url }); return; }
-    await navigator.clipboard.writeText(url);
-    btn.textContent = 'Link copied ✓';
-  } catch { btn.textContent = 'Share'; }
-  setTimeout(() => { btn.textContent = 'Share'; }, 1600);
+/* advancement toast */
+let toastT;
+function advancement(msg) {
+  $('toastMsg').textContent = msg;
+  $('toast').classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => $('toast').classList.remove('show'), 3200);
+}
+$('copyIpBtn').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(location.origin); advancement('Server IP copied to clipboard!'); }
+  catch { advancement(location.origin); }
 });
 
 /* clock */
-function tickClock() {
-  const el = $('termClock');
-  if (!el) return;
-  el.textContent = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false });
-}
-tickClock(); setInterval(tickClock, 1000);
+function tick() { $('termClock').textContent = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false }); }
+tick(); setInterval(tick, 1000);
+const stamp = () => new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false });
 
 /* terminal */
-function line(html, cls) {
+function line(html) {
   const box = $('termLog');
   const d = document.createElement('div');
-  d.className = 'l ' + (cls || '');
-  d.innerHTML = html;
+  d.innerHTML = `<span class="t-dim">[${stamp()}]</span> ${html}`;
   box.appendChild(d);
   box.scrollTop = box.scrollHeight;
-  return d;
-}
-async function typeCmd(text) {
-  const box = $('termLog');
-  const d = document.createElement('div');
-  d.className = 'l';
-  d.innerHTML = '<span class="t-ok">➜</span> <span class="t-c">~</span> <span class="t-w"></span>';
-  box.appendChild(d);
-  const span = d.querySelector('.t-w');
-  if (reduced) { span.textContent = text; return; }
-  for (const ch of text) { span.textContent += ch; await sleep(42); }
 }
 async function bootLog(routes) {
-  const log = $('termLog');
-  log.innerHTML = '';
-  await typeCmd('npm run dev');
-  await sleep(350);
-  line('> kuroneko-api • ts-node index.ts', 't-dim');
-  await sleep(300);
+  $('termLog').innerHTML = '';
+  line('<span class="t-w">Loading world "kuroneko"...</span>');
+  await sleep(reduced ? 0 : 350);
+  line('<span class="t-g">Starting minecraft server version 1.0</span>');
+  line('<span class="t-dim">Loading level "api-world"...</span>');
+  await sleep(reduced ? 0 : 300);
   for (const r of routes.slice(0, 12)) {
-    line(`<span class="t-g">[ + ]</span> <span class="t-c">${r.method}</span>  ${r.endpoint}  <span class="t-dim">✓</span>`);
-    if (!reduced) await sleep(60);
+    line(`<span class="t-g">[+]</span> <span class="t-c">${r.method}</span> ${r.endpoint}`);
+    if (!reduced) await sleep(55);
   }
-  if (routes.length > 12) line(`<span class="t-dim">… +${routes.length - 12} more routes loaded</span>`);
-  await sleep(250);
-  line(`<span class="t-ok">[ ✓ ] Server running on ${location.origin}</span>`);
+  if (routes.length > 12) line(`<span class="t-dim">... +${routes.length - 12} more recipes</span>`);
+  await sleep(reduced ? 0 : 250);
+  line(`<span class="t-ok">Done! Server running on ${location.origin}</span>`);
 }
 
 /* reveal */
-function observeRv(scope) {
-  const els = (scope || document).querySelectorAll('.rv:not(.in)');
+function observeRv() {
+  const els = document.querySelectorAll('.rv:not(.in)');
   if (reduced || !('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('in')); return; }
   const io = new IntersectionObserver((es) => {
-    es.forEach((en, i) => {
-      if (en.isIntersecting) { setTimeout(() => en.target.classList.add('in'), i * 70); io.unobserve(en.target); }
-    });
-  }, { threshold: 0.1 });
+    es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold: 0.08 });
   els.forEach((e) => io.observe(e));
 }
 
+/* crafting recipes */
+function recipes(origin, ep) {
+  const url = origin + ep;
+  return {
+    curl: `curl -X GET "${url}"`,
+    js: `const res = await fetch("${url}");\nconst data = await res.json();\nconsole.log(data); // GG!`,
+    py: `import requests\n\nres = requests.get("${url}")\nprint(res.json())  # GG!`
+  };
+}
+let currentRecipes = {};
+document.querySelectorAll('.ctab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ctab').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    $('craftCode').textContent = currentRecipes[btn.dataset.lang] || '';
+  });
+});
+$('craftCopy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('craftCode').textContent); advancement('Recipe copied to inventory!'); }
+  catch { advancement('Copy failed, sadge.'); }
+});
+
 /* data */
 async function load() {
-  let cfg = null, stats = null;
-  try {
-    const r = await fetch('/config');
-    cfg = await r.json();
-  } catch {}
-  try {
-    const r2 = await fetch('/stats/data');
-    stats = await r2.json();
-  } catch {}
-
+  $('splash').textContent = SPLASHES[Math.floor(Math.random() * SPLASHES.length)];
+  let cfg = null;
+  try { cfg = await (await fetch('/config')).json(); } catch {}
   const s = (cfg && cfg.settings) || {};
   const name = s.apiName || 'KuroNeko';
-  document.title = `${name} — Midnight API Platform`;
+  document.title = `${name} — Minecraft API Server`;
   $('dashTitle').textContent = name;
-  $('dashDesc').textContent = s.description || 'Free & reliable API service for modern apps. Fast, stable, easy to integrate.';
+  $('dashDesc').textContent = s.description || 'Free & reliable API service for modern apps.';
   $('verBadge').textContent = s.apiVersion || 'v1.0';
+  $('motdVer').textContent = s.apiVersion || 'v1.0';
   $('footCreator').textContent = (cfg && cfg.creator) || s.creator || 'Danzz';
   $('footYear').textContent = new Date().getFullYear();
-  if (s.favicon) {
-    $('favicon').href = s.favicon;
-    const th = $('dashThumb');
-    th.src = s.thumbnail || s.favicon;
-    th.onerror = () => { th.src = 'https://placehold.co/400x240/12121d/22d3ee?text=KURO'; };
-  } else {
-    $('dashThumb').src = 'https://placehold.co/400x240/12121d/22d3ee?text=KURO';
-  }
+  const th = $('dashThumb');
+  th.src = s.favicon || s.thumbnail || '';
+  th.onerror = () => { th.src = 'https://placehold.co/64x64/1a1d12/6abe30?text=K'; };
+  th.style.imageRendering = 'pixelated';
   const gh = s.github || 'https://github.com/DanzzAraAra';
   $('btnGithub').href = gh;
-  const ch = s.channelUrl;
-  if (ch) { $('btnChannel').href = ch; $('btnChannelM').href = ch; }
+  if (s.channelUrl) { $('btnChannel').href = s.channelUrl; $('btnChannelM').href = s.channelUrl; }
   else { $('btnChannel').style.display = 'none'; $('btnChannelM').style.display = 'none'; }
-
-  // flatten routes
   const tags = (cfg && cfg.tags) || {};
   const routes = [];
   Object.entries(tags).forEach(([cat, arr]) => (arr || []).forEach((r) => routes.push({ cat, ...r })));
-  $('stEndpoints').textContent = routes.length || '—';
-  $('stCats').textContent = Object.keys(tags).length || '—';
+  $('stEndpoints').textContent = routes.length || '–';
+  $('stCats').textContent = Object.keys(tags).length || '–';
+  $('motdCount').textContent = routes.length || '–';
+  $('motdPlayers').textContent = 1 + Math.floor(Math.random() * 42);
+  $('motdPing').classList.add('on');
 
-  await bootLog(routes.length ? routes : [
-    { method: 'GET', endpoint: '/api/search/yts' },
-    { method: 'GET', endpoint: '/api/ai/kuroneko' },
-    { method: 'GET', endpoint: '/api/tools/shorturl' },
-  ]);
+  await bootLog(routes.length ? routes : [{ method: 'GET', endpoint: '/api/search/yts' }]);
 
-  // preview grid (max 6)
   const grid = $('epGrid');
   grid.innerHTML = '';
   const pick = routes.slice(0, 6);
-  if (!pick.length) {
-    grid.innerHTML = '<p style="color:var(--mut)">Belum ada endpoint terdaftar.</p>';
-  } else {
-    pick.forEach((r, i) => {
-      const a = document.createElement('a');
-      a.className = 'ep rv';
-      a.href = '/docs';
-      const mc = r.method === 'POST' ? 'post' : r.method === 'DELETE' ? 'delete' : r.method === 'GET' ? '' : 'other';
-      a.innerHTML = `<div class="ep-top"><span class="mbadge ${mc}">${r.method || 'GET'}</span><span class="ep-cat">${r.cat}</span></div><h3>${r.name || r.endpoint}</h3><code>${r.endpoint}</code><p>${(r.params || []).length ? r.params.length + ' params' : 'No params'} • klik untuk coba →</p>`;
-      a.style.transitionDelay = (i * 40) + 'ms';
-      grid.appendChild(a);
-    });
-  }
-  // reveal everything
-  document.querySelectorAll('.hero-left > *, .hero-right > *').forEach((el) => el.classList.add('rv'));
-  observeRv(document);
-  // stagger hero in
-  document.querySelectorAll('.hero .rv').forEach((el, i) => setTimeout(() => el.classList.add('in'), 60 * i + 100));
+  if (!pick.length) grid.innerHTML = '<p style="color:var(--mut)">Chest is empty... for now.</p>';
+  else pick.forEach((r, i) => {
+    const a = document.createElement('a');
+    a.className = 'ep rv';
+    a.href = '/docs';
+    const mc = r.method === 'POST' ? 'post' : r.method === 'DELETE' ? 'delete' : r.method === 'GET' ? '' : 'other';
+    a.innerHTML = `${i === 0 ? '<span class="new">NEW!</span>' : ''}<div class="ep-top"><span class="mbadge ${mc}">${r.method || 'GET'}</span><span class="ep-cat">${r.cat}</span></div><h3>${r.name || r.endpoint}</h3><code>${r.endpoint}</code><p>${(r.params || []).length ? r.params.length + 'x material needed' : 'No materials needed'} — click to craft</p>`;
+    grid.appendChild(a);
+  });
+
+  const firstEp = (routes[0] && routes[0].endpoint) || '/api/search/yts';
+  currentRecipes = recipes(location.origin, firstEp);
+  $('craftCode').textContent = currentRecipes.curl;
+
+  document.querySelectorAll('.hero-text > *, .hero-side > *').forEach((el) => el.classList.add('rv'));
+  observeRv();
 }
 load();
