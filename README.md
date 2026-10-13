@@ -9,12 +9,9 @@
 <p>
   <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" />
-  <img src="https://img.shields.io/badge/PM2-2B037A?style=for-the-badge&logo=pm2&logoColor=white" alt="PM2" />
-  <img src="https://img.shields.io/badge/VPS_Ready-107C10?style=for-the-badge&logo=windows-terminal&logoColor=white" alt="VPS" />
-  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
 </p>
 
-[Demo Website](https://kuronekoapy.vercel.app) • [REST API](https://sylvatica.my.id) • [Bug Report](https://github.com/DanzzAraAra/kuroneko-base-api/issues)
+[REST API](https://sylvatica.my.id) • [Bug Report](https://github.com/DanzzAraAra/kuroneko-base-api/issues)
 
 </div>
 
@@ -37,8 +34,6 @@ Project ini dirancang dengan struktur modular sehingga endpoint dapat ditambahka
 - IP-based rate limiter
 - Automatic API documentation
 - Server statistics
-- VPS support
-- Vercel support
 
 ---
 
@@ -56,8 +51,6 @@ Project ini dirancang dengan struktur modular sehingga endpoint dapat ditambahka
 | **Auto Docs** | Dokumentasi endpoint tersedia melalui `/docs`. |
 | **Server Stats** | Informasi CPU, RAM, uptime, dan request melalui `/stats`. |
 | **Modern UI** | Landing page dan documentation UI bawaan. |
-| **Vercel Ready** | Dapat digunakan pada Vercel maupun VPS. |
-| **VPS Ready** | Dapat dijalankan menggunakan Node.js atau PM2. |
 
 ---
 
@@ -88,11 +81,7 @@ Jika sebuah IP mengirim lebih dari **15 request dalam 1 detik**, IP tersebut aka
 
 Rate limiter dipasang secara global sehingga berlaku untuk seluruh endpoint yang berada setelah middleware.
 
-> **Note:** Rate limiter menggunakan memory process.
->
-> Pada VPS dengan satu process, state berada pada process tersebut.
->
-> Pada Vercel/serverless, state tidak dijamin persisten antar-instance. Oleh karena itu, rate limiter ini **bukan distributed rate limiter**.
+> **Note:** Rate limiter menggunakan memory process, sehingga state tidak shared antar-instance. Oleh karena itu, rate limiter ini **bukan distributed rate limiter**.
 
 ---
 
@@ -104,7 +93,6 @@ Rate limiter dipasang secara global sehingga berlaku untuk seluruh endpoint yang
 ├── package.json
 ├── README.md
 ├── tsconfig.json
-├── vercel.json
 │
 ├── public
 │   ├── docs
@@ -573,81 +561,6 @@ dist/
 
 ---
 
-## PM2
-
-Untuk menjalankan API sebagai background process pada VPS, install PM2:
-
-```bash
-npm install -g pm2
-```
-
-Build project:
-
-```bash
-npm run build
-```
-
-Start application:
-
-```bash
-pm2 start dist/index.js --name "kuroneko-api"
-```
-
-Save process list:
-
-```bash
-pm2 save
-```
-
-Enable startup:
-
-```bash
-pm2 startup
-```
-
-Check status:
-
-```bash
-pm2 status
-```
-
-View logs:
-
-```bash
-pm2 logs kuroneko-api
-```
-
-Restart application:
-
-```bash
-pm2 restart kuroneko-api
-```
-
----
-
-## Vercel
-
-KuroNeko API dapat digunakan pada **Vercel**.
-
-Pastikan file berikut tersedia pada root project:
-
-```text
-vercel.json
-```
-
-### Deployment
-
-1. Push repository ke GitHub.
-2. Import repository ke Vercel.
-3. Deploy project.
-4. Vercel akan menggunakan konfigurasi deployment yang tersedia.
-
-> **Important:** Rate limiter berbasis memory tidak dirancang sebagai distributed rate limiter.
->
-> Pada platform serverless seperti Vercel, beberapa instance dapat memiliki memory/state yang berbeda.
-
----
-
 ## NPM Scripts
 
 ### Development
@@ -673,14 +586,6 @@ npm start
 ```
 
 Menjalankan hasil build production.
-
-### PM2
-
-```bash
-npm run pm2
-```
-
-Menjalankan server menggunakan konfigurasi PM2 jika script tersebut tersedia di `package.json`.
 
 ---
 

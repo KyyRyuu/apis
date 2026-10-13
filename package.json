@@ -12,8 +12,7 @@
     "copy-assets": "mkdir -p dist/src/endpoints dist/router && cp -r src/*.json src/*.jpg dist/src/ 2>/dev/null || true && cp -r src/endpoints/*.json dist/src/endpoints/ 2>/dev/null || true && cp -r public dist/ 2>/dev/null || true",
     "start": "node dist/index.js",
     "dev": "ts-node index.ts",
-    "dev:watch": "nodemon --exec ts-node index.ts",
-    "pm2": "pm2 start index.ts --name kuroneko --interpreter node --node-args=\"-r ts-node/register\" && pm2 save"
+    "dev:watch": "nodemon --exec ts-node index.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.3",

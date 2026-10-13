@@ -238,7 +238,7 @@ export const rateLimit = async (
   const now = Date.now();
 
   /*
-   * Vercel / VPS with Upstash
+   * Redis-backed rate limiter
    */
 
   if (redis) {

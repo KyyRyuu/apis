@@ -134,13 +134,6 @@ main{position:relative;z-index:1}
 .fico{display:inline-flex;width:38px;height:38px;border-radius:12px;align-items:center;justify-content:center;font-size:17px;color:#fff;background:linear-gradient(135deg,#8b5cf6,#0ea5e9);margin-bottom:14px}
 .feat h3{margin:0 0 8px;font-size:15.5px}
 .feat p{margin:0;color:var(--mut);font-size:13.5px;line-height:1.7}
-.how{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:30px;margin-top:10px}
-.how h2{font-family:'Space Grotesk',sans-serif;margin:0 0 20px;font-size:clamp(22px,3vw,28px)}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.step{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:16px;padding:18px}
-.step span{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pink);letter-spacing:.16em}
-.step code{display:block;margin:10px 0;font-size:13px}
-.step p{margin:0;color:var(--mut);font-size:13px}
 .foot{padding:36px 0 48px;text-align:center;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em}
 .foot strong{color:var(--cyn)}
 .foot-sub{margin-top:10px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -159,7 +152,6 @@ main{position:relative;z-index:1}
 @media(max-width:960px){
   .hero{grid-template-columns:1fr;padding-top:36px}
   .epgrid,.featgrid{grid-template-columns:repeat(2,1fr)}
-  .steps{grid-template-columns:1fr}
 }
 @media(max-width:640px){
   .topnav,.bar-cta{display:none}
