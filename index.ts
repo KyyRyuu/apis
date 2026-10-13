@@ -182,6 +182,18 @@ app.get('/api/ai', (req: Request, res: Response) => {
     );
 });
 
+app.get('/download', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'download', 'download.html')
+    );
+});
+
+app.get('/api/download', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'download', 'download.html')
+    );
+});
+
 app.use((req: Request, res: Response) => {
     if (req.accepts('html')) {
         const files = [
