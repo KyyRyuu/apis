@@ -146,7 +146,7 @@ async function load() {
   else pick.forEach((r, i) => {
     const a = document.createElement('a');
     a.className = 'ep rv';
-    a.href = '/docs';
+    a.href = r.cat === 'ai' ? '/ai' : '/docs';
     const mc = r.method === 'POST' ? 'post' : r.method === 'DELETE' ? 'delete' : r.method === 'GET' ? '' : 'other';
     a.innerHTML = `<span class="idx">0${i + 1}</span><div class="ep-top"><span class="mbadge ${mc}">${r.method || 'GET'}</span><span class="ep-cat">${r.cat}</span></div><h3>${r.name || r.endpoint}</h3><code>${r.endpoint}</code><p>${(r.params || []).length ? r.params.length + ' params' : 'No params'} — open in docs →</p>`;
     grid.appendChild(a);

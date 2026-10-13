@@ -170,6 +170,18 @@ app.get('/docs', (req: Request, res: Response) => {
     );
 });
 
+app.get('/ai', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'ai', 'ai.html')
+    );
+});
+
+app.get('/api/ai', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'ai', 'ai.html')
+    );
+});
+
 app.use((req: Request, res: Response) => {
     if (req.accepts('html')) {
         const files = [
