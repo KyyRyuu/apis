@@ -3,73 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KuroNeko | Server Stats</title>
-<meta name="description" content="Live KuroNeko debug screen — uptime, CPU, XP memory bar, chat log.">
+<title>KuroNeko | Stats</title>
+<meta name="description" content="Live KuroNeko telemetry — uptime, CPU, memory, event log.">
+<meta name="theme-color" content="#0a0a0a">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Syne:wght@700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="/stats/stats.css">
 </head>
 <body>
-<a href="#reqList" class="skip">Lewati ke chat log</a>
-<div class="bg" aria-hidden="true"></div>
+<a href="#reqList" class="skip">Skip to event log</a>
+<div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div></div>
 
 <nav class="topbar">
   <div class="bar-inner">
-    <a href="/" class="mcbtn icon" aria-label="Kembali"><i class="fa-solid fa-arrow-left"></i></a>
-    <div class="titlebox">
-      <h1>DEBUG SCREEN</h1>
-      <span class="sub">F3 • KURO EDITION</span>
-    </div>
-    <span class="mc-badge live"><span class="pulse"></span><span id="liveTxt">LIVE</span></span>
-    <button id="pauseBtn" class="mcbtn icon" aria-label="Jeda auto-refresh" aria-pressed="false" title="Jeda / lanjutkan"><i class="fa-solid fa-pause"></i></button>
-    <a href="/docs" class="mcbtn small">DOCS</a>
+    <a href="/" class="iconbtn" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></a>
+    <div class="titlebox"><h1>TELEMETRY</h1><span class="sub">LIVE • 2s TICK</span></div>
+    <span class="pill"><span class="dot"></span><span id="liveTxt">LIVE</span></span>
+    <button id="pauseBtn" class="iconbtn" aria-label="Pause auto-refresh" aria-pressed="false" title="Pause / resume"><i class="fa-solid fa-pause"></i></button>
+    <a href="/docs" class="btn">DOCS</a>
   </div>
 </nav>
 
 <main class="layout">
-  <div class="hearts" aria-label="Server health">
-    <span class="hp-row" id="hpRow" title="Server health"></span>
-    <span class="hp-txt"><span id="hpTxt">20</span>/20 HP</span>
+  <div class="health card reveal">
+    <div class="hpmeta"><span class="hp-label">SERVER HEALTH</span><span class="hp-num"><span id="hpTxt">100</span>%</span></div>
+    <div class="hpbar"><div id="hpFill"></div></div>
   </div>
 
   <div class="cards3">
-    <div class="stat reveal">
-      <h3><i class="fa-solid fa-clock"></i> UPTIME</h3>
-      <p id="uptime" class="big"><span class="skel-line"></span></p>
-      <p class="hint">Updated <span id="updatedAt">—</span> • 2s tick</p>
-    </div>
-    <div class="stat reveal">
-      <h3><i class="fa-solid fa-server"></i> WORLD HOST</h3>
-      <p id="platform" class="big"><span class="skel-line"></span></p>
-      <div class="chips"><span id="osBadge" class="chip">--</span><span id="arch" class="chip">--</span><span id="node-ver" class="chip acc">--</span></div>
-    </div>
-    <div class="stat reveal">
-      <h3><i class="fa-solid fa-microchip"></i> REDSTONE LOAD</h3>
-      <p id="cpu-load" class="big">—</p>
-      <p id="cpu-model" class="hint truncate">Detecting…</p>
-    </div>
+    <div class="stat card reveal"><h3><i class="fa-solid fa-clock"></i> UPTIME</h3><p id="uptime" class="big"><span class="skel-line"></span></p><p class="hint">Updated <span id="updatedAt">—</span></p></div>
+    <div class="stat card reveal"><h3><i class="fa-solid fa-server"></i> HOST</h3><p id="platform" class="big"><span class="skel-line"></span></p><div class="chips"><span id="osBadge" class="chip">--</span><span id="arch" class="chip">--</span><span id="node-ver" class="chip acc">--</span></div></div>
+    <div class="stat card reveal"><h3><i class="fa-solid fa-microchip"></i> CPU LOAD</h3><p id="cpu-load" class="big">—</p><p id="cpu-model" class="hint truncate">Detecting…</p></div>
   </div>
 
   <div class="grid2">
-    <div class="stat reveal">
-      <h2 class="sech"><i class="fa-solid fa-bolt"></i> EXPERIENCE <span class="xplvl" id="memLevel">0</span></h2>
+    <div class="stat card reveal">
+      <h2 class="sech"><i class="fa-solid fa-memory"></i> MEMORY <span class="lvl"><span id="memLevel">0</span>%</span></h2>
       <div class="memrow"><span>USED <strong id="mem-used">—</strong></span><span>TOTAL <strong id="mem-total">—</strong></span></div>
-      <div class="xptrack"><div id="ram-bar" class="xpfill"><span id="ram-percent">0%</span></div></div>
+      <div class="loadtrack"><div id="ram-bar" class="loadfill"><span id="ram-percent">0%</span></div></div>
       <p class="freeline">FREE <span id="mem-free">—</span></p>
-      <canvas id="memSpark" width="520" height="64" aria-label="Grafik histori memori" role="img"></canvas>
+      <canvas id="memSpark" width="520" height="64" aria-label="Memory history" role="img"></canvas>
       <div class="ministats">
-        <div><span>RECIPES</span><strong id="epCount">—</strong></div>
-        <div><span>CHAT LOG</span><strong id="reqCount">0</strong></div>
+        <div><span>ENDPOINTS</span><strong id="epCount">—</strong></div>
+        <div><span>LOGGED</span><strong id="reqCount">0</strong></div>
         <div><span>SESSION</span><strong id="sessReq">0</strong></div>
       </div>
     </div>
-    <div class="stat reveal">
-      <h2 class="sech"><i class="fa-solid fa-message"></i> MULTIPLAYER CHAT <span class="mc-badge sm"><span class="pulse"></span>TAIL</span></h2>
-      <div id="reqList" class="chatlog" aria-live="polite"><p class="hint">Waiting for players…</p></div>
-      <p class="hint">Max 50 baris terakhir. Query disamarkan &lt;param&gt;.</p>
+    <div class="stat card reveal">
+      <h2 class="sech"><i class="fa-solid fa-terminal"></i> EVENT LOG <span class="pill sm"><span class="dot"></span>TAIL</span></h2>
+      <div id="reqList" class="elog" aria-live="polite"><p class="hint">Waiting for events…</p></div>
+      <p class="hint">Last 50 API hits. Query values are masked.</p>
     </div>
   </div>
 </main>

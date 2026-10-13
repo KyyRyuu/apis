@@ -1,12 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const SPLASHES = [
-  "100% creeper free!", "Now with 8 enchantments!", "Punch trees, get APIs!",
-  "Also try Terraria!", "Diamond-grade uptime!", "Respawn point set!",
-  "Watch out for phantoms!", "Endermen approved!", "32 chunks loaded!",
-  "Herobrine removed!", "TNT-powered routing!", "Fresh chunks daily!"
-];
+const WORDS = ['fast.', 'typed.', 'modular.', 'documented.', 'rate-limited.', 'always up.'];
 
 /* drawer */
 const drawer = $('drawer'), scrim = $('scrim'), menuBtn = $('menuBtn');
@@ -15,48 +10,62 @@ function closeDrawer() { drawer.classList.remove('open'); scrim.classList.remove
 menuBtn.addEventListener('click', openDrawer);
 $('drawerClose').addEventListener('click', closeDrawer);
 scrim.addEventListener('click', closeDrawer);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrawer();
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); location.href = '/docs'; }
+});
 
-/* advancement toast */
+/* toast */
 let toastT;
-function advancement(msg) {
+function toast(msg) {
   $('toastMsg').textContent = msg;
   $('toast').classList.add('show');
   clearTimeout(toastT);
-  toastT = setTimeout(() => $('toast').classList.remove('show'), 3200);
+  toastT = setTimeout(() => $('toast').classList.remove('show'), 2600);
 }
 $('copyIpBtn').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(location.origin); advancement('Server IP copied to clipboard!'); }
-  catch { advancement(location.origin); }
+  try { await navigator.clipboard.writeText(location.origin); toast('URL copied to clipboard'); }
+  catch { toast(location.origin); }
 });
 
 /* clock */
 function tick() { $('termClock').textContent = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false }); }
 tick(); setInterval(tick, 1000);
-const stamp = () => new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false });
+
+/* typed hero */
+async function typer() {
+  const el = $('typed');
+  let i = 0;
+  for (;;) {
+    const w = WORDS[i % WORDS.length];
+    for (let c = 1; c <= w.length; c++) { el.textContent = w.slice(0, c); await sleep(reduced ? 0 : 55); }
+    await sleep(1400);
+    for (let c = w.length; c >= 0; c--) { el.textContent = w.slice(0, c); await sleep(reduced ? 0 : 24); }
+    i++;
+  }
+}
+typer();
 
 /* terminal */
-function line(html) {
+function line(html, cls) {
   const box = $('termLog');
   const d = document.createElement('div');
-  d.innerHTML = `<span class="t-dim">[${stamp()}]</span> ${html}`;
+  d.innerHTML = `<span class="${cls || ''}">${html}</span>`;
   box.appendChild(d);
   box.scrollTop = box.scrollHeight;
 }
 async function bootLog(routes) {
   $('termLog').innerHTML = '';
-  line('<span class="t-w">Loading world "kuroneko"...</span>');
-  await sleep(reduced ? 0 : 350);
-  line('<span class="t-g">Starting minecraft server version 1.0</span>');
-  line('<span class="t-dim">Loading level "api-world"...</span>');
+  line('$ kuroneko --boot', 'c');
   await sleep(reduced ? 0 : 300);
-  for (const r of routes.slice(0, 12)) {
-    line(`<span class="t-g">[+]</span> <span class="t-c">${r.method}</span> ${r.endpoint}`);
-    if (!reduced) await sleep(55);
+  line('』 backend online :: express + typescript', 'd');
+  for (const r of routes.slice(0, 10)) {
+    line(`<span class="g">＋</span> <span class="c">${r.method}</span>  ${r.endpoint}`, '');
+    if (!reduced) await sleep(60);
   }
-  if (routes.length > 12) line(`<span class="t-dim">... +${routes.length - 12} more recipes</span>`);
+  if (routes.length > 10) line(`… +${routes.length - 10} routes mounted`, 'd');
   await sleep(reduced ? 0 : 250);
-  line(`<span class="t-ok">Done! Server running on ${location.origin}</span>`);
+  line(`<span class="ok">✔ listening on ${location.origin}</span>`, '');
 }
 
 /* reveal */
@@ -65,17 +74,17 @@ function observeRv() {
   if (reduced || !('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('in')); return; }
   const io = new IntersectionObserver((es) => {
     es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
-  }, { threshold: 0.08 });
+  }, { threshold: 0.1 });
   els.forEach((e) => io.observe(e));
 }
 
-/* crafting recipes */
+/* recipes */
 function recipes(origin, ep) {
   const url = origin + ep;
   return {
     curl: `curl -X GET "${url}"`,
-    js: `const res = await fetch("${url}");\nconst data = await res.json();\nconsole.log(data); // GG!`,
-    py: `import requests\n\nres = requests.get("${url}")\nprint(res.json())  # GG!`
+    js: `const res = await fetch("${url}");\nconst data = await res.json();\nconsole.log(data);`,
+    py: `import requests\n\nres = requests.get("${url}")\nprint(res.json())`
   };
 }
 let currentRecipes = {};
@@ -88,61 +97,65 @@ document.querySelectorAll('.ctab').forEach((btn) => {
   });
 });
 $('craftCopy').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('craftCode').textContent); advancement('Recipe copied to inventory!'); }
-  catch { advancement('Copy failed, sadge.'); }
+  try { await navigator.clipboard.writeText($('craftCode').textContent); toast('Snippet copied'); }
+  catch { toast('Copy failed'); }
 });
 
 /* data */
 async function load() {
-  $('splash').textContent = SPLASHES[Math.floor(Math.random() * SPLASHES.length)];
   let cfg = null;
   try { cfg = await (await fetch('/config')).json(); } catch {}
   const s = (cfg && cfg.settings) || {};
   const name = s.apiName || 'KuroNeko';
-  document.title = `${name} — Minecraft API Server`;
+  document.title = `${name} — API Platform`;
   $('dashTitle').textContent = name;
-  $('dashDesc').textContent = s.description || 'Free & reliable API service for modern apps.';
+  $('srvMotd').textContent = s.description ? (s.description.length > 90 ? s.description.slice(0, 90) + '…' : s.description) : 'Reliable API for modern apps.';
+  $('dashDesc').textContent = s.description || 'Free & reliable API service for modern apps. Fast, stable, easy to integrate.';
   $('verBadge').textContent = s.apiVersion || 'v1.0';
   $('motdVer').textContent = s.apiVersion || 'v1.0';
   $('footCreator').textContent = (cfg && cfg.creator) || s.creator || 'Danzz';
   $('footYear').textContent = new Date().getFullYear();
   const th = $('dashThumb');
   th.src = s.favicon || s.thumbnail || '';
-  th.onerror = () => { th.src = 'https://placehold.co/64x64/1a1d12/6abe30?text=K'; };
-  th.style.imageRendering = 'pixelated';
+  th.onerror = () => { th.src = 'https://placehold.co/112x112/12121a/ef4444?text=KN'; };
+  if (s.favicon) $('favicon').href = s.favicon;
   const gh = s.github || 'https://github.com/DanzzAraAra';
   $('btnGithub').href = gh;
-  if (s.channelUrl) { $('btnChannel').href = s.channelUrl; $('btnChannelM').href = s.channelUrl; }
+  const ch = s.channelUrl;
+  if (ch) { $('btnChannel').href = ch; $('btnChannelM').href = ch; }
   else { $('btnChannel').style.display = 'none'; $('btnChannelM').style.display = 'none'; }
+
   const tags = (cfg && cfg.tags) || {};
   const routes = [];
   Object.entries(tags).forEach(([cat, arr]) => (arr || []).forEach((r) => routes.push({ cat, ...r })));
   $('stEndpoints').textContent = routes.length || '–';
   $('stCats').textContent = Object.keys(tags).length || '–';
-  $('motdCount').textContent = routes.length || '–';
-  $('motdPlayers').textContent = 1 + Math.floor(Math.random() * 42);
   $('motdPing').classList.add('on');
 
-  await bootLog(routes.length ? routes : [{ method: 'GET', endpoint: '/api/search/yts' }]);
+  /* ticker */
+  const items = routes.length ? routes : [{ method: 'GET', endpoint: '/api/search/yts' }];
+  const half = items.map((r) => `<span>&nbsp;&nbsp;<b>${r.method}</b> ${r.endpoint} ◆</span>`).join('');
+  $('ticker').innerHTML = half + half;
+
+  await bootLog(items);
 
   const grid = $('epGrid');
   grid.innerHTML = '';
   const pick = routes.slice(0, 6);
-  if (!pick.length) grid.innerHTML = '<p style="color:var(--mut)">Chest is empty... for now.</p>';
+  if (!pick.length) grid.innerHTML = '<p style="color:var(--mut)">No endpoints registered yet.</p>';
   else pick.forEach((r, i) => {
     const a = document.createElement('a');
     a.className = 'ep rv';
     a.href = '/docs';
     const mc = r.method === 'POST' ? 'post' : r.method === 'DELETE' ? 'delete' : r.method === 'GET' ? '' : 'other';
-    a.innerHTML = `${i === 0 ? '<span class="new">NEW!</span>' : ''}<div class="ep-top"><span class="mbadge ${mc}">${r.method || 'GET'}</span><span class="ep-cat">${r.cat}</span></div><h3>${r.name || r.endpoint}</h3><code>${r.endpoint}</code><p>${(r.params || []).length ? r.params.length + 'x material needed' : 'No materials needed'} — click to craft</p>`;
+    a.innerHTML = `<span class="idx">0${i + 1}</span><div class="ep-top"><span class="mbadge ${mc}">${r.method || 'GET'}</span><span class="ep-cat">${r.cat}</span></div><h3>${r.name || r.endpoint}</h3><code>${r.endpoint}</code><p>${(r.params || []).length ? r.params.length + ' params' : 'No params'} — open in docs →</p>`;
     grid.appendChild(a);
   });
 
-  const firstEp = (routes[0] && routes[0].endpoint) || '/api/search/yts';
-  currentRecipes = recipes(location.origin, firstEp);
+  currentRecipes = recipes(location.origin, (routes[0] && routes[0].endpoint) || '/api/search/yts');
   $('craftCode').textContent = currentRecipes.curl;
 
-  document.querySelectorAll('.hero-text > *, .hero-side > *').forEach((el) => el.classList.add('rv'));
+  document.querySelectorAll('.hero-l > *, .hero-r > *').forEach((el) => el.classList.add('rv'));
   observeRv();
 }
 load();

@@ -3,98 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KuroNeko | Crafting Manual</title>
-<meta name="description" content="KuroNeko API crafting manual — browse recipes and craft requests live.">
+<title>KuroNeko | Docs</title>
+<meta name="description" content="KuroNeko API reference — browse routes and execute them live.">
+<meta name="theme-color" content="#0a0a0a">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Syne:wght@700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="/docs/docs.css">
 </head>
 <body>
-<a href="#endpoint-view" class="skip">Lewati ke dokumentasi</a>
-<div class="bg" aria-hidden="true"></div>
+<a href="#endpoint-view" class="skip">Skip to docs</a>
+<div class="bg" aria-hidden="true"><div class="grid"></div><div class="glow"></div></div>
 
 <header class="topbar">
   <div class="bar-inner">
-    <button id="menu-toggle" class="mcbtn icon" aria-label="Buka menu endpoint" aria-expanded="false" aria-controls="sidebar"><i class="fa-solid fa-bars"></i></button>
-    <a href="/" class="brand" aria-label="Kembali ke beranda">
-      <span class="grass-logo" aria-hidden="true"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect width="16" height="16" fill="#6b4a2a"/><rect y="0" width="16" height="4" fill="#6abe30"/><rect y="4" width="2" height="2" fill="#6abe30"/><rect x="5" y="4" width="3" height="2" fill="#6abe30"/><rect x="11" y="4" width="2" height="2" fill="#6abe30"/></svg></span>
-      <span class="brand-txt"><span id="nav-title" class="brand-name">KURONEKO</span><span class="brand-sub">CRAFTING MANUAL</span></span>
+    <button id="menu-toggle" class="iconbtn" aria-label="Open endpoint menu" aria-expanded="false" aria-controls="sidebar"><i class="fa-solid fa-bars"></i></button>
+    <a href="/" class="brand" aria-label="Back home">
+      <span class="mark" aria-hidden="true">KN</span>
+      <span class="brand-tx"><span id="nav-title" class="brand-nm">KURO//NEKO</span><span class="brand-sb">DOCS</span></span>
     </a>
-    <span id="docSplash" class="splash" aria-hidden="true">Punch trees!</span>
-    <span id="statusPill" class="mc-badge"><span class="pulse"></span><span id="statusPillTxt">CONNECTING</span></span>
+    <span id="statusPill" class="pill"><span class="dot"></span><span id="statusPillTxt">CONNECTING</span></span>
     <div class="bar-actions">
-      <a href="/" class="mcbtn icon" aria-label="Kembali ke Beranda"><i class="fa-solid fa-house"></i></a>
-      <a href="/stats" class="mcbtn icon" aria-label="Lihat Stats"><i class="fa-solid fa-chart-column"></i></a>
+      <a href="/" class="iconbtn" aria-label="Home"><i class="fa-solid fa-house"></i></a>
+      <a href="/stats" class="iconbtn" aria-label="Stats"><i class="fa-solid fa-chart-column"></i></a>
     </div>
   </div>
 </header>
 
 <div id="sidebar-overlay" class="scrim"></div>
 
-<aside id="sidebar" class="sidebar" aria-hidden="true" aria-label="Daftar endpoint">
+<aside id="sidebar" class="sidebar" aria-hidden="true" aria-label="Endpoint list">
   <div class="side-head">
-    <div>
-      <h2>RECIPE BOOK</h2>
-      <span class="side-sub"><span id="epCount">–</span> RECIPES • tekan <kbd>/</kbd></span>
-    </div>
-    <button id="sidebar-close" class="mcbtn icon" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
+    <div><h2>ROUTES</h2><span class="side-sub"><span id="epCount">–</span> TOTAL • <kbd>/</kbd> SEARCH</span></div>
+    <button id="sidebar-close" class="iconbtn" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="searchbox">
-    <input type="text" id="search-input" placeholder="Search recipes... ( / )" class="search" autocomplete="off" aria-label="Cari endpoint">
+    <input type="text" id="search-input" placeholder="Filter routes…" class="search" autocomplete="off" aria-label="Filter routes">
     <i class="fa-solid fa-magnifying-glass search-ic"></i>
   </div>
-  <div class="mfilter" role="group" aria-label="Filter method">
+  <div class="mfilter" role="group" aria-label="Filter by method">
     <button class="mf active" data-mfilter="ALL">ALL</button>
     <button class="mf" data-mfilter="GET">GET</button>
     <button class="mf" data-mfilter="POST">POST</button>
     <button class="mf" data-mfilter="DELETE">DEL</button>
   </div>
   <div id="sidebar-tree" class="tree"></div>
-  <div id="no-results" class="nores hidden">
-    <i class="fa-solid fa-ghost"></i>
-    <p>No recipes found</p>
-  </div>
-  <div class="side-foot"><p>CRAFTED BY <span>Danzz</span> • 2026</p></div>
+  <div id="no-results" class="nores hidden"><i class="fa-solid fa-ghost"></i><p>No routes match</p></div>
+  <div class="side-foot"><p>KURO//NEKO © 2026</p></div>
 </aside>
 
 <main class="layout">
-  <aside class="rail" aria-label="Panel monitor">
+  <aside class="rail" aria-label="Monitor panel">
     <div class="console reveal">
       <div class="console-screen">
-        <div class="console-bar">
-          <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
-          <span class="console-title">server console</span>
-        </div>
+        <div class="console-bar"><span class="tl"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="console-tt">kuroneko — live</span></div>
         <div id="term-logs" class="termlog" aria-live="polite"></div>
-        <div id="term-input-line" class="terminput hidden">
-          <span class="t-g">&gt;_</span><span class="cursor"></span>
-        </div>
+        <div id="term-input-line" class="terminput hidden"><span class="grn">❯</span><span class="cur"></span></div>
       </div>
     </div>
     <div class="infocard reveal">
       <div class="inforow"><span class="infolabel"><i class="fa-regular fa-clock"></i>TIME</span><span id="server-time" class="infoval">--:--:--</span></div>
       <div class="inforow"><span class="infolabel"><i class="fa-regular fa-calendar"></i>DATE</span><span id="server-date" class="infoval sm">--/--/----</span></div>
       <div class="inforow"><span class="infolabel"><i class="fa-solid fa-battery-half"></i>BATTERY</span><span id="stat-battery" class="infoval acc">--%</span></div>
-      <div class="inforow"><span class="infolabel"><i class="fa-solid fa-gamepad"></i>DEVICE</span><span id="stat-device" class="infoval acc">Unknown</span></div>
+      <div class="inforow"><span class="infolabel"><i class="fa-solid fa-laptop"></i>DEVICE</span><span id="stat-device" class="infoval acc">Unknown</span></div>
     </div>
   </aside>
 
-  <section class="docpanel" aria-label="Dokumentasi">
+  <section class="docpanel" aria-label="Documentation">
     <div id="intro-view" class="card pad reveal"></div>
     <div id="endpoint-view" class="hidden eplist"></div>
   </section>
 </main>
 
-<div id="custom-toast" class="adv" role="status" aria-live="polite">
-  <div class="adv-in">
-    <span class="adv-ic"><i class="fa-solid fa-check"></i></span>
-    <span class="adv-txt"><b>Advancement made!</b><em id="toast-message">SUCCESS</em></span>
-  </div>
-</div>
-
+<div id="custom-toast" class="toast" role="status" aria-live="polite"><div class="toast-in"><i class="fa-solid fa-check"></i><span id="toast-message">SUCCESS</span></div></div>
 <script src="/docs/docs.js"></script>
 </body>
 </html>

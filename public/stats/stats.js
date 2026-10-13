@@ -10,24 +10,21 @@ let memHist = [];
 let sessTotal = 0;
 let lastSeen = 0;
 
-/* hearts */
-function renderHearts(pct) {
-  const row = $('hpRow');
-  row.innerHTML = '';
-  const full = Math.round(((100 - pct) / 100) * 10);
-  for (let i = 0; i < 10; i++) {
-    const h = document.createElement('span');
-    h.className = 'hp' + (i < full ? ' full' : '');
-    row.appendChild(h);
-  }
-  $('hpTxt').textContent = full * 2;
+function renderHealth(pct) {
+  const hp = Math.max(0, Math.round(100 - pct));
+  $('hpTxt').textContent = hp;
+  const f = $('hpFill');
+  f.style.width = hp + '%';
+  f.classList.remove('warn', 'crit');
+  if (hp < 10) f.classList.add('crit');
+  else if (hp < 30) f.classList.add('warn');
 }
 
 $('pauseBtn').addEventListener('click', () => {
   paused = !paused;
   $('pauseBtn').innerHTML = paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
   $('pauseBtn').setAttribute('aria-pressed', String(paused));
-  document.querySelector('.live').classList.toggle('paused', paused);
+  document.querySelector('.pill').classList.toggle('paused', paused);
   $('liveTxt').textContent = paused ? 'PAUSED' : 'LIVE';
   if (!paused) fetchStats();
 });
@@ -38,7 +35,7 @@ function statusClass(line) {
   if (!m) return 'ok';
   const c = parseInt(m[1], 10);
   if (c >= 500) return 'err';
-  if (c >= 400) return 'warn';
+  if (c >= 400) return 'wrn';
   return 'ok';
 }
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -48,15 +45,15 @@ function renderRequests(reqs) {
   $('reqCount').textContent = reqs.length;
   if (reqs.length > lastSeen) { sessTotal += (reqs.length - lastSeen); $('sessReq').textContent = sessTotal; }
   lastSeen = reqs.length;
-  if (!reqs.length) { box.innerHTML = '<p class="hint">Waiting for players…</p>'; return; }
+  if (!reqs.length) { box.innerHTML = '<p class="hint">Waiting for events…</p>'; return; }
   box.innerHTML = '';
   reqs.slice(-14).reverse().forEach((r) => {
     const method = (r.match(/\[([A-Z]+)\]/) || [, 'GET'])[1];
     const code = (r.match(/\[(\d{3})\]/) || [, '200'])[1];
     const url = (r.split(' ').slice(2).join(' ') || r).replace(/^https?:\/\/[^/]+/, '');
     const d = document.createElement('div');
-    d.className = 'msg';
-    d.innerHTML = `<span class="t">&lt;server&gt;</span> <span class="m">[${method}]</span> <span class="${statusClass(r)}">${code}</span> <span class="u">${esc(url)}</span>`;
+    d.className = 'ev';
+    d.innerHTML = `<span class="t">›</span> <span class="m">[${method}]</span> <span class="${statusClass(r)}">${code}</span> <span class="u">${esc(url)}</span>`;
     box.appendChild(d);
   });
 }
@@ -67,15 +64,16 @@ function drawSpark() {
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#3a3d28';
-  for (let x = 0; x < W; x += 8) for (let y = 0; y < H; y += 8) ctx.fillRect(x, y, 2, 2);
+  ctx.strokeStyle = '#2a2a38';
+  ctx.lineWidth = 1;
+  for (let g = 1; g < 4; g++) { ctx.beginPath(); ctx.moveTo(0, (H / 4) * g); ctx.lineTo(W, (H / 4) * g); ctx.stroke(); }
   if (memHist.length < 2) {
-    ctx.fillStyle = '#7a765c'; ctx.font = '16px VT323';
-    ctx.fillText('generating terrain…', 14, H / 2 + 6);
+    ctx.fillStyle = '#55556a'; ctx.font = '18px VT323';
+    ctx.fillText('collecting telemetry…', 14, H / 2 + 6);
     return;
   }
-  ctx.strokeStyle = '#6abe30'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-  ctx.shadowColor = '#6abe30'; ctx.shadowBlur = 8;
+  ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 8;
   ctx.beginPath();
   memHist.forEach((v, i) => {
     const x = (i / (memHist.length - 1)) * (W - 8) + 4;
@@ -99,7 +97,7 @@ async function fetchStats() {
     $('node-ver').textContent = s.node_version;
     $('cpu-model').textContent = `${s.cpu.model} (${s.cpu.cores} cores)`;
     const loadPct = Math.min(100, Math.round(parseFloat(s.cpu.load) * 10));
-    $('cpu-load').textContent = (isNaN(loadPct) ? 0 : loadPct) + '% redstone';
+    $('cpu-load').textContent = (isNaN(loadPct) ? 0 : loadPct) + '% load';
     $('mem-used').textContent = s.memory.used;
     $('mem-total').textContent = s.memory.total;
     $('mem-free').textContent = s.memory.free;
@@ -107,10 +105,7 @@ async function fetchStats() {
     bar.style.width = s.memory.percent + '%';
     $('ram-percent').textContent = s.memory.percent + '%';
     $('memLevel').textContent = s.memory.percent;
-    bar.classList.remove('warn', 'danger');
-    if (s.memory.percent > 90) bar.classList.add('danger');
-    else if (s.memory.percent > 70) bar.classList.add('warn');
-    renderHearts(s.memory.percent);
+    renderHealth(s.memory.percent);
     memHist.push(s.memory.percent);
     if (memHist.length > 60) memHist.shift();
     drawSpark();
@@ -130,7 +125,7 @@ async function fetchEpCount() {
   } catch { $('epCount').textContent = '—'; }
 }
 
-renderHearts(25);
+renderHealth(25);
 fetchStats();
 fetchEpCount();
 setInterval(fetchStats, 2000);

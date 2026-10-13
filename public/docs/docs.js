@@ -589,22 +589,22 @@ function renderIntro(config) {
         <div class="mb-5">
             <h2
                 class="font-black text-xl"
-                style="color:#f2f2e9"
+                style="color:#ffffff"
             >
-                Crafting Guide
+                Overview
             </h2>
 
             <p
                 class="text-xs font-bold"
                 style="color:#94A3B8"
             >
-                Spawn guide to using ${apiName}
+                Quickstart for ${apiName}
             </p>
         </div>
 
         <p
             class="text-sm leading-relaxed font-semibold mb-6"
-            style="color:#b8b49a"
+            style="color:#d4d4d8"
         >
             Welcome to the ${apiName} documentation.
             Open the menu in the top-left corner to browse
@@ -614,7 +614,7 @@ function renderIntro(config) {
 
         <h3
             class="font-black text-sm mb-2"
-            style="color:#f2f2e9"
+            style="color:#ffffff"
         >
             Example Usage
         </h3>
@@ -630,7 +630,7 @@ function renderIntro(config) {
 
         <h3
             class="font-black text-sm mb-2"
-            style="color:#f2f2e9"
+            style="color:#ffffff"
         >
             Response Format
         </h3>
@@ -687,7 +687,7 @@ function renderIntro(config) {
 
         <h3
             class="font-black text-sm mb-2 mt-6"
-            style="color:#f2f2e9"
+            style="color:#ffffff"
         >
             Status Codes
         </h3>
@@ -742,7 +742,7 @@ function buildSidebarTree(tags) {
         </div>
 
         <span class="folder-title">
-            Spawn Point
+            Overview
         </span>
     `;
 
@@ -973,7 +973,7 @@ function renderEndpointCard(route, id) {
             onclick="backToIntro()"
         >
             <i class="fa-solid fa-arrow-left"></i>
-            Recipe Book
+            All Endpoints
         </button>
 
         <div class="ep-card reveal in">
@@ -994,7 +994,7 @@ function renderEndpointCard(route, id) {
                     <div class="flex flex-col min-w-0">
                         <code
                             class="font-bold text-[13px] truncate"
-                            style="color:#f2f2e9"
+                            style="color:#ffffff"
                         >
                             ${route.endpoint}
                         </code>
