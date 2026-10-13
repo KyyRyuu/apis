@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KuroNeko | Docs</title>
+<meta name="description" content="KuroNeko API documentation — browse endpoints and try them live.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="/docs/docs.css">
+</head>
+<body>
+<a href="#endpoint-view" class="skip">Lewati ke dokumentasi</a>
+<div class="bg" aria-hidden="true"><div class="orb orb-v"></div><div class="orb orb-c"></div><div class="grid-overlay"></div></div>
+
+<header class="topbar">
+  <div class="bar-inner">
+    <button id="menu-toggle" class="iconbtn" aria-label="Buka menu endpoint" aria-expanded="false" aria-controls="sidebar">
+      <i class="fa-solid fa-bars text-sm"></i>
+    </button>
+    <a href="/" class="brand" aria-label="Kembali ke beranda">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M6 4l5 6 5-6 5 6 5-6v11c0 7-4.5 11-10 11S6 22 6 15V4z" fill="currentColor"/><circle cx="12" cy="14" r="1.8" fill="#07070c"/><circle cx="20" cy="14" r="1.8" fill="#07070c"/></svg></span>
+      <span class="brand-txt"><span id="nav-title" class="brand-name">KURONEKO</span><span class="brand-sub">API DOCS • クロネコ</span></span>
+    </a>
+    <span id="statusPill" class="live" title="Status server"><span class="pulse"></span><span id="statusPillTxt">CONNECTING</span></span>
+    <div class="bar-actions">
+      <a href="/" class="iconbtn" aria-label="Kembali ke Beranda"><i class="fa-solid fa-house text-sm"></i></a>
+      <a href="/stats" class="iconbtn" aria-label="Lihat Stats"><i class="fa-solid fa-chart-line text-sm"></i></a>
+    </div>
+  </div>
+</header>
+
+<div id="sidebar-overlay" class="scrim"></div>
+
+<aside id="sidebar" class="sidebar" aria-hidden="true" aria-label="Daftar endpoint">
+  <div class="side-head">
+    <div>
+      <h2>Endpoints</h2>
+      <span class="side-sub">PILIH UNTUK MENCOBA • tekan <kbd>/</kbd></span>
+    </div>
+    <button id="sidebar-close" class="iconbtn" aria-label="Tutup menu"><i class="fa-solid fa-xmark text-sm"></i></button>
+  </div>
+  <div class="searchbox">
+    <input type="text" id="search-input" placeholder="Cari endpoint…  ( / )" class="search" autocomplete="off" aria-label="Cari endpoint">
+    <i class="fa-solid fa-magnifying-glass search-ic"></i>
+  </div>
+  <div id="sidebar-tree" class="tree"></div>
+  <div id="no-results" class="nores hidden">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <p>Endpoint tidak ditemukan</p>
+  </div>
+  <div class="side-foot"><p>POWERED BY <span>Danzz</span> • 2026</p></div>
+</aside>
+
+<main class="layout">
+  <aside class="rail" aria-label="Panel monitor">
+    <div class="console reveal">
+      <div class="console-screen">
+        <div class="console-bar">
+          <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+          <span class="console-title">root@kuroneko ~</span>
+        </div>
+        <div id="term-logs" class="termlog" aria-live="polite"></div>
+        <div id="term-input-line" class="terminput hidden">
+          <span class="t-g">➜</span><span class="t-c">~</span><span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+    <div class="infocard reveal">
+      <div class="inforow"><span class="infolabel"><i class="fa-regular fa-clock"></i>WAKTU (WIB)</span><span id="server-time" class="infoval">--:--:--</span></div>
+      <div class="inforow"><span class="infolabel"><i class="fa-regular fa-calendar"></i>TANGGAL</span><span id="server-date" class="infoval sm">--/--/----</span></div>
+      <div class="inforow"><span class="infolabel"><i class="fa-solid fa-battery-half"></i>BATERAI</span><span id="stat-battery" class="infoval acc">--%</span></div>
+      <div class="inforow"><span class="infolabel"><i class="fa-solid fa-mobile-screen"></i>DEVICE</span><span id="stat-device" class="infoval acc">Unknown</span></div>
+    </div>
+  </aside>
+
+  <section class="docpanel" aria-label="Dokumentasi">
+    <div id="intro-view" class="card pad reveal"></div>
+    <div id="endpoint-view" class="hidden eplist"></div>
+  </section>
+</main>
+
+<div id="custom-toast" class="toast" role="status" aria-live="polite">
+  <div class="toast-in">
+    <span class="toast-ic"><i class="fa-solid fa-check text-xs"></i></span>
+    <span id="toast-message" class="toast-msg">SUCCESS</span>
+  </div>
+</div>
+
+<script src="/docs/docs.js"></script>
+</body>
+</html>

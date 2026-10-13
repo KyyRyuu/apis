@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KuroNeko — Midnight API Platform</title>
+<meta name="description" content="KuroNeko API — fast, modular REST API platform built with Express & TypeScript.">
+<link id="favicon" rel="icon" href="">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/landing/landing.css">
+</head>
+<body>
+<a href="#main" class="skip">Lewati ke konten</a>
+
+<div class="bg" aria-hidden="true">
+  <div class="orb orb-v"></div>
+  <div class="orb orb-c"></div>
+  <div class="orb orb-p"></div>
+  <div class="grid-overlay"></div>
+  <div class="noise"></div>
+</div>
+
+<header class="topbar">
+  <div class="wrap bar-inner">
+    <button id="menuBtn" class="iconbtn only-mobile" aria-label="Buka menu" aria-expanded="false" aria-controls="drawer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+    </button>
+    <a href="/" class="brand" aria-label="KuroNeko home">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M6 4l5 6 5-6 5 6 5-6v11c0 7-4.5 11-10 11S6 22 6 15V4z" fill="currentColor" opacity=".95"/><circle cx="12" cy="14" r="1.8" fill="#07070c"/><circle cx="20" cy="14" r="1.8" fill="#07070c"/><path d="M12 19c1.2 1.4 6.8 1.4 8 0" stroke="#07070c" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </span>
+      <span class="brand-txt">
+        <span class="brand-name">KURO<span class="accent">NEKO</span></span>
+        <span class="brand-sub">クロネコ • API PLATFORM</span>
+      </span>
+    </a>
+    <nav class="topnav" aria-label="Navigasi utama">
+      <a href="/docs" class="toplink">Docs</a>
+      <a href="/stats" class="toplink">Stats</a>
+      <a id="btnGithub" href="#" target="_blank" rel="noopener" class="toplink">GitHub</a>
+      <span class="live" title="Server online"><span class="pulse"></span><span id="liveTxt">LIVE</span></span>
+    </nav>
+    <div class="bar-cta">
+      <a href="/docs" class="btn btn-primary">Try API
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div id="scrim" class="scrim"></div>
+<aside id="drawer" class="drawer" aria-hidden="true" aria-label="Menu mobile">
+  <div class="drawer-head">
+    <span class="brand-name small">KURO<span class="accent">NEKO</span></span>
+    <button id="drawerClose" class="iconbtn" aria-label="Tutup menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <nav class="drawer-nav">
+    <a href="/docs" class="dlink"><span>Docs</span><em>API Reference & try-it</em></a>
+    <a href="/stats" class="dlink"><span>Stats</span><em>Uptime, CPU, RAM</em></a>
+    <a id="btnChannelM" href="#" target="_blank" rel="noopener" class="dlink"><span>Channel</span><em>WhatsApp updates</em></a>
+  </nav>
+  <p class="drawer-foot">MIDNIGHT BUILD • 2026</p>
+</aside>
+
+<main id="main" class="wrap">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-left">
+      <p class="eyebrow"><span class="jp">クロネコ</span><span class="dot"></span><span id="verBadge">v1.0</span><span class="dot"></span><span>EXPRESS • TYPESCRIPT</span></p>
+      <h1 class="title">Ship APIs at<br><span class="grad">midnight speed.</span></h1>
+      <p id="dashDesc" class="lede">Memuat deskripsi…</p>
+      <div class="cta-row">
+        <a href="/docs" class="btn btn-primary lg">Explore Docs
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+        </a>
+        <a href="/stats" class="btn btn-ghost lg">View Stats</a>
+        <button id="shareBtn" class="btn btn-ghost lg" type="button">Share</button>
+      </div>
+      <dl class="statstrip" aria-label="Ringkasan API">
+        <div><dt>ENDPOINTS</dt><dd id="stEndpoints">—</dd></div>
+        <div><dt>CATEGORIES</dt><dd id="stCats">—</dd></div>
+        <div><dt>RATE LIMIT</dt><dd>15<span class="mut">/s</span></dd></div>
+        <div><dt>STATUS</dt><dd class="ok"><span class="pulse sm"></span>ONLINE</dd></div>
+      </dl>
+    </div>
+    <div class="hero-right">
+      <div class="term" role="img" aria-label="Pratinjau terminal server">
+        <div class="term-bar">
+          <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+          <span class="term-title">root@kuroneko — live boot</span>
+          <span id="termClock" class="term-clock">--:--:--</span>
+        </div>
+        <div id="termLog" class="term-log" aria-live="polite"></div>
+        <div class="term-foot">
+          <span class="cursor"></span>
+          <span id="termHint">ts-node • hot reload • auto docs</span>
+        </div>
+      </div>
+      <div class="thumbcard">
+        <img id="dashThumb" alt="KuroNeko cover" loading="lazy">
+        <div class="thumb-meta">
+          <span id="dashTitle" class="thumb-title">KuroNeko</span>
+          <span class="thumb-tag">DYNAMIC ROUTER</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENDPOINT PREVIEW -->
+  <section class="section" aria-labelledby="epH">
+    <div class="sec-head">
+      <div>
+        <h2 id="epH">Endpoints, siap tembak.</h2>
+        <p>Daftarkan lewat JSON, router auto-load. Ini cuplikan live dari <code>/config</code>.</p>
+      </div>
+      <a href="/docs" class="btn btn-ghost">Buka semua →</a>
+    </div>
+    <div id="epGrid" class="epgrid">
+      <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+      <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" aria-labelledby="ftH">
+    <div class="sec-head">
+      <div>
+        <h2 id="ftH">Kenapa betah di sini.</h2>
+        <p>Base API yang tipis, cepat, dan tidak banyak drama.</p>
+      </div>
+    </div>
+    <div class="featgrid">
+      <article class="feat"><span class="fico">◈</span><h3>Dynamic Router</h3><p>Tambah endpoint cukup via <code>src/endpoints/*.json</code> + file di <code>router/</code>. Tanpa sentuh <code>index.ts</code>.</p></article>
+      <article class="feat"><span class="fico">◎</span><h3>Rate Limiter</h3><p>15 req/detik per IP, auto-ban 1 menit. In-memory, tanpa database.</p></article>
+      <article class="feat"><span class="fico">▣</span><h3>Auto Docs</h3><p>Halaman <code>/docs</code> generate otomatis + try-it langsung dari browser.</p></article>
+      <article class="feat"><span class="fico">⬢</span><h3>Live Stats</h3><p><code>/stats</code> pantau uptime, CPU, RAM, dan 50 request terakhir.</p></article>
+      <article class="feat"><span class="fico">⬣</span><h3>TypeScript</h3><p>Strict typing, error handler terpusat, logger IP + status berwarna.</p></article>
+      <article class="feat"><span class="fico">⬔</span><h3>VPS & Vercel Ready</h3><p><code>npm run build && npm start</code>, atau deploy serverless via <code>vercel.json</code>.</p></article>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section class="section how" aria-labelledby="howH">
+    <h2 id="howH">Dari clone ke live dalam 3 langkah.</h2>
+    <div class="steps">
+      <div class="step"><span>01</span><code>npm install</code><p>Install 272 deps sekali jalan.</p></div>
+      <div class="step"><span>02</span><code>npm run dev</code><p>Dev di <code>localhost:3000</code> + hot reload.</p></div>
+      <div class="step"><span>03</span><code>npm run build && npm start</code><p>Compile ke <code>dist/</code>, siap PM2 / VPS.</p></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>POWERED BY <strong id="footCreator">Danzz</strong> • MIDNIGHT BUILD • <span id="footYear">2026</span></p>
+    <p class="foot-sub"><a id="btnChannel" href="#" target="_blank" rel="noopener">Channel</a> • <a href="/docs">Docs</a> • <a href="/stats">Stats</a> • <a href="/config">config.json</a></p>
+  </footer>
+</main>
+
+<script src="/landing/landing.js"></script>
+</body>
+</html>

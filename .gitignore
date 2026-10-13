@@ -1,0 +1,7 @@
+node_modules/
+dist/
+server.log
+nohup.out
+.env
+*.log
+.DS_Store
