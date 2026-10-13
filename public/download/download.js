@@ -34,14 +34,44 @@ function showTab(which) {
   tabEp.setAttribute('aria-selected', String(isEp));
   $('view-saver').hidden = isEp;
   $('view-eps').hidden = !isEp;
-  try { history.replaceState(null, '', isEp ? '/download#endpoints' : '/download'); } catch {}
+  try { if (/^\/download\/?(#endpoints)?$/.test(location.pathname)) history.replaceState(null, '', isEp ? '/download#endpoints' : '/download'); } catch {}
 }
 tabSv.addEventListener('click', () => showTab('saver'));
 tabEp.addEventListener('click', () => showTab('eps'));
 
 /* ---------- SAVER ---------- */
 const STEPS = ['Fetching post…', 'Parsing SSR payload…', 'Resolving CDN links…', 'Verifying files…'];
+const THREAD_SAMPLES = [
+  ['cth: foto', 'https://www.threads.com/share/BAFMYe__aO/'],
+  ['cth: video', 'https://www.threads.com/share/BAo4O5AVfz/'],
+  ['cth: carousel', 'https://www.threads.com/share/BAdzD60DJQ/']
+];
 let saverBusy = false;
+let saverRoute = null;
+function saverKey() {
+  const ps = (saverRoute && saverRoute.params) || [];
+  const req = ps.find((p) => p.required) || ps[0];
+  return (req && req.name) || 'url';
+}
+function setSaver(route) {
+  saverRoute = route;
+  if (!route) return;
+  $('saverTitle').textContent = ((route.name || route.endpoint) + '').toUpperCase().slice(0, 28);
+  const key = saverKey();
+  $('saverSub').textContent = `Tempel link, intip hasilnya, gas download — via ${route.endpoint} (param: ${key}).`;
+  const chips = $('sampleChips');
+  chips.innerHTML = '';
+  if (route.filename === 'threads') {
+    THREAD_SAMPLES.forEach(([label, sample]) => {
+      const b = document.createElement('button');
+      b.className = 'chip';
+      b.type = 'button';
+      b.textContent = label;
+      b.addEventListener('click', () => { $('dlInput').value = sample; runSaver(sample); });
+      chips.appendChild(b);
+    });
+  }
+}
 
 function dlBtn(href, label, fname) {
   return `<a class="btn grn sm" href="${esc(href)}" download="${esc(fname)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> ${esc(label)}</a>`;
@@ -125,6 +155,7 @@ function renderResult(j) {
 async function runSaver(rawUrl) {
   const url = (rawUrl || '').trim();
   if (!url) { toast('Tempel URL dulu'); return; }
+  if (!saverRoute) { toast('Endpoint belum siap'); return; }
   if (saverBusy) return;
   saverBusy = true;
   $('dlGo').disabled = true;
@@ -136,7 +167,7 @@ async function runSaver(rawUrl) {
   ptxt.textContent = STEPS[0];
   const stepTimer = setInterval(() => { si = Math.min(si + 1, STEPS.length - 1); ptxt.textContent = STEPS[si]; }, 4000);
   try {
-    const r = await fetch('/api/download/threads?url=' + encodeURIComponent(url));
+    const r = await fetch(saverRoute.endpoint + '?' + new URLSearchParams({ [saverKey()]: url }));
     const j = await r.json();
     clearInterval(stepTimer);
     prog.hidden = true;
@@ -151,10 +182,6 @@ async function runSaver(rawUrl) {
   } finally { saverBusy = false; $('dlGo').disabled = false; }
 }
 $('dlForm').addEventListener('submit', (e) => { e.preventDefault(); runSaver($('dlInput').value); });
-document.querySelectorAll('.chip[data-sample]').forEach((c) => c.addEventListener('click', () => {
-  $('dlInput').value = c.dataset.sample;
-  runSaver(c.dataset.sample);
-}));
 
 /* ---------- ENDPOINT CARDS ---------- */
 let dlRoutes = [];
@@ -228,10 +255,10 @@ function renderEps() {
   box.querySelectorAll('[data-exec]').forEach((b) => b.addEventListener('click', () => execRoute(b, dlRoutes[+b.dataset.exec], +b.dataset.exec)));
   box.querySelectorAll('[data-send]').forEach((b) => b.addEventListener('click', () => {
     const r = dlRoutes[+b.dataset.send];
+    setSaver(r);
     const inp = document.getElementById(`dl-${(+b.dataset.send)}-url`);
     if (inp && inp.value) { $('dlInput').value = inp.value; showTab('saver'); runSaver(inp.value); }
     else { showTab('saver'); $('dlInput').focus(); }
-    void r;
   }));
 }
 
@@ -243,6 +270,9 @@ async function load() {
     if (cfg.settings?.apiName) $('nav-title').textContent = 'KURO//NEKO';
     dlRoutes = ((cfg.tags || {}).download || []).map((r) => ({ cat: 'download', ...r }));
     renderEps();
+    const segs = location.pathname.split('/').filter(Boolean);
+    const deep = segs.length >= 2 && segs[0] === 'download' ? dlRoutes.find((r) => r.filename === segs[1]) : null;
+    setSaver(deep || dlRoutes[0] || null);
     setPill(true, 'ONLINE');
   } catch (e) {
     $('dlList').innerHTML = '<p style="color:var(--acc)">Gagal memuat config: ' + esc(e.message) + '</p>';

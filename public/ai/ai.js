@@ -41,7 +41,7 @@ function showTab(which) {
   $('view-list').hidden = isPlay;
   $('view-play').hidden = !isPlay;
   if (isPlay) setTimeout(() => $('chatInput').focus(), 50);
-  try { history.replaceState(null, '', isPlay ? '/ai#play' : '/ai'); } catch {}
+  try { if (/^\/ai\/?(#play)?$/.test(location.pathname)) history.replaceState(null, '', isPlay ? '/ai#play' : '/ai'); } catch {}
 }
 tabEp.addEventListener('click', () => showTab('list'));
 tabPlay.addEventListener('click', () => showTab('play'));
@@ -232,7 +232,14 @@ async function load() {
     });
     renderList();
     updateSess();
-    if (aiRoutes[0]) greet(aiRoutes[0]);
+    const segs = location.pathname.split('/').filter(Boolean);
+    const deep = segs.length >= 2 && segs[0] === 'ai' ? aiRoutes.find((r) => r.filename === segs[1]) : null;
+    if (deep) {
+      sel.value = deep.endpoint;
+      updateSess();
+      greet(deep);
+      showTab('play');
+    } else if (aiRoutes[0]) greet(aiRoutes[0]);
     setPill(true, 'ONLINE');
   } catch (e) {
     $('aiList').innerHTML = '<p style="color:var(--acc)">Gagal memuat config: ' + esc(e.message) + '</p>';

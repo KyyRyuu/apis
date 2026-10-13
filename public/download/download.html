@@ -44,18 +44,14 @@
   <section id="view-saver" role="tabpanel" aria-labelledby="tab-saver">
     <div class="hero card">
       <p class="kicker">// PASTE. PREVIEW. SAVE.</p>
-      <h1>THREADS SAVER</h1>
-      <p class="sub">Tempel link Threads, intip medianya, gas download — video, foto, carousel, semua kebawa.</p>
+      <h1 id="saverTitle">THREADS SAVER</h1>
+      <p class="sub" id="saverSub">Tempel link Threads, intip medianya, gas download — video, foto, carousel, semua kebawa.</p>
       <form id="dlForm" class="dlbar" autocomplete="off">
         <i class="fa-solid fa-link dlic"></i>
         <input id="dlInput" type="url" inputmode="url" placeholder="https://www.threads.com/…/post/…" aria-label="Threads URL">
         <button class="btn pri" type="submit" id="dlGo"><i class="fa-solid fa-download"></i> <span>GO</span></button>
       </form>
-      <div class="chips">
-        <button class="chip" data-sample="https://www.threads.com/share/BAFMYe__aO/" type="button">cth: foto</button>
-        <button class="chip" data-sample="https://www.threads.com/share/BAo4O5AVfz/" type="button">cth: video</button>
-        <button class="chip" data-sample="https://www.threads.com/share/BAdzD60DJQ/" type="button">cth: carousel</button>
-      </div>
+      <div class="chips" id="sampleChips">
     </div>
     <div id="dlProg" class="prog card" hidden>
       <div class="spin"></div>

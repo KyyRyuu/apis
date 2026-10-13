@@ -194,6 +194,26 @@ app.get('/api/download', (req: Request, res: Response) => {
     );
 });
 
+app.get('/ai/:model', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'ai', 'ai.html')
+    );
+});
+
+app.get('/download/:name', (req: Request, res: Response) => {
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'download', 'download.html')
+    );
+});
+
+app.get('/:cat/:ep', (req: Request, res: Response, next: NextFunction) => {
+    const reserved = ['api', 'src', 'landing', 'docs', 'stats', 'config', 'ai', 'download'];
+    if (reserved.includes(req.params.cat)) return next();
+    return res.sendFile(
+        path.join(process.cwd(), 'public', 'ep', 'ep.html')
+    );
+});
+
 app.use((req: Request, res: Response) => {
     if (req.accepts('html')) {
         const files = [

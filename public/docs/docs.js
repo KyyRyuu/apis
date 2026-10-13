@@ -45,6 +45,7 @@ async function init() {
         await kuroneko(globalConfig);
         setSearch();
         mcExtras(globalConfig);
+        openCatFromUrl();
         setPill(true, "ONLINE");
         observeReveals();
     } catch (e) {
@@ -755,6 +756,7 @@ function buildSidebarTree(tags) {
 
     for (const [cat, routes] of Object.entries(tags)) {
         const catId = `cat-${cat.replace(/\s+/g, "-")}`;
+        const secUrl = cat === "ai" ? "/ai" : cat === "download" ? "/download" : `/docs?cat=${encodeURIComponent(cat)}`;
         const wrap = document.createElement("div");
 
         wrap.className = "folder-wrap";
@@ -762,7 +764,8 @@ function buildSidebarTree(tags) {
         wrap.innerHTML = `
             <button
                 class="folder-btn"
-                onclick="toggleFolder('${catId}')"
+                data-cat="${cat}"
+                onclick="openCategory('${catId}', this)"
             >
                 <div class="folder-icon">
                     <i class="fa-solid fa-folder"></i>
@@ -775,6 +778,15 @@ function buildSidebarTree(tags) {
                 <span class="folder-count">
                     ${routes.length}
                 </span>
+
+                <a
+                    class="sec-link"
+                    href="${secUrl}"
+                    title="Buka halaman ${cat}"
+                    onclick="event.stopPropagation()"
+                >
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
 
                 <i
                     id="arrow-${catId}"
@@ -849,6 +861,79 @@ window.toggleFolder = catId => {
         .getElementById(`arrow-${catId}`)
         .classList.toggle("rotate-180");
 };
+
+const SECTION_URL = { ai: "/ai", download: "/download" };
+
+function catRoutes(cat) {
+    return Object.entries(routesById)
+        .filter(([, r]) => r.cat === cat)
+        .map(([id, r]) => ({ id, ...r }));
+}
+
+function renderCategory(cat) {
+    const list = catRoutes(cat);
+    const ev = document.getElementById("endpoint-view");
+    const secUrl = SECTION_URL[cat];
+    const methodClass = (m) =>
+        m === "GET" ? "get" : m === "POST" ? "post" : m === "DELETE" ? "delete" : "other";
+
+    document.querySelectorAll(".file-item").forEach((f) => f.classList.remove("active"));
+    document.getElementById("sidebar-intro-btn").classList.remove("active");
+
+    ev.innerHTML = `
+        <button class="back-btn w-fit" onclick="backToIntro()">
+            <i class="fa-solid fa-arrow-left"></i>
+            Overview
+        </button>
+        <div class="cat-head">
+            <div>
+                <p class="cat-kicker">// CATEGORY</p>
+                <h2 class="cat-title">${cat.toUpperCase()}</h2>
+                <p class="cat-sub">${list.length} endpoint${list.length === 1 ? "" : "s"} — klik TEST untuk execute.</p>
+            </div>
+            ${secUrl ? `<a class="back-btn w-fit" href="${secUrl}" title="Buka halaman ${cat}"><i class="fa-solid fa-arrow-up-right-from-square"></i> OPEN PAGE</a>` : ""}
+        </div>
+        <div class="cat-grid">
+            ${list.map(({ id, ...r }) => `
+                <div class="cat-card">
+                    <div class="cat-card-top">
+                        <span class="method-badge ${methodClass(r.method)}">${r.method}</span>
+                        <code>${r.endpoint}</code>
+                    </div>
+                    <p class="cat-card-name">${r.name}</p>
+                    <p class="cat-card-meta">${(r.params || []).length ? r.params.length + " params" : "no params"}</p>
+                    <div class="cat-card-ft">
+                        <button class="clay-btn cat-test" data-test="${id}"><i class="fa-solid fa-play"></i> TEST</button>
+                        <a class="back-btn w-fit" href="/${cat}/${r.filename}" title="Deep link"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                    </div>
+                </div>`).join("")}
+        </div>`;
+    ev.querySelectorAll("[data-test]").forEach((b) =>
+        b.addEventListener("click", () => selectEndpoint(b.getAttribute("data-test")))
+    );
+
+    document.getElementById("intro-view").classList.add("hidden");
+    ev.classList.remove("hidden");
+    ev.classList.add("flex");
+    closeSidebar();
+}
+
+window.openCategory = (catId, btn) => {
+    toggleFolder(catId);
+    const cat = btn.getAttribute("data-cat");
+    if (cat) renderCategory(cat);
+};
+
+function openCatFromUrl() {
+    try {
+        const cat = new URLSearchParams(location.search).get("cat");
+        if (!cat || !globalConfig || !globalConfig.tags || !globalConfig.tags[cat]) return;
+        const catId = `cat-${cat.replace(/\s+/g, "-")}`;
+        const files = document.getElementById(`files-${catId}`);
+        if (files && files.classList.contains("hidden")) toggleFolder(catId);
+        renderCategory(cat);
+    } catch {}
+}
 
 function selectEndpoint(id) {
     const route = routesById[id];
