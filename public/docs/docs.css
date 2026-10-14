@@ -18,8 +18,8 @@ code{font-family:'DM Mono',monospace}
 .skip:focus{top:12px}
 kbd{font-size:.75em;background:var(--elev);border:1px solid var(--line);border-bottom-width:3px;padding:1px 7px;border-radius:4px;color:var(--txt)}
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
-.grid{position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 100%)}
-.glow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 35% at 50% 0%,#ef44441c,transparent 65%)}
+.bg .grid{position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 100%)}
+.bg .glow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 35% at 50% 0%,#ef44441c,transparent 65%)}
 
 /* buttons */
 .iconbtn,.clay-icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;background:var(--elev);border:2px solid var(--line);border-radius:12px;color:var(--txt);cursor:pointer;box-shadow:var(--sh);transition:all .15s;text-decoration:none;flex-shrink:0}

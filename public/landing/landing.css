@@ -23,8 +23,8 @@ kbd{font-size:.75em;background:var(--elev);border:1px solid var(--line);border-b
 
 /* bg */
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
-.grid{position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 100%)}
-.glow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 38% at 50% 6%,#ef444422,transparent 65%)}
+.bg .grid{position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 100%)}
+.bg .glow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 38% at 50% 6%,#ef444422,transparent 65%)}
 .scan{position:absolute;inset:0;opacity:.5;background:repeating-linear-gradient(0deg,transparent 0 3px,#00000055 3px 4px)}
 
 /* buttons */

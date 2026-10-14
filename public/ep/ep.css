@@ -16,8 +16,8 @@ code{font-size:.85em;background:#000;border:1px solid var(--line);padding:1px 7p
 .skip:focus{top:12px}
 .wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
-.grid{position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 100%)}
-.glow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 35% at 50% 0%,#ef44441c,transparent 65%)}
+.bg .grid{position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 100%)}
+.bg .glow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 35% at 50% 0%,#ef44441c,transparent 65%)}
 
 .btn{display:inline-flex;align-items:center;gap:8px;font-size:11px;padding:12px 17px;color:#fff;text-decoration:none;cursor:pointer;border:2px solid var(--line);border-radius:11px;background:var(--elev);box-shadow:var(--sh);transition:all .15s;white-space:nowrap}
 .btn:hover{border-color:var(--acc);transform:translate(-1px,-1px);box-shadow:var(--sh-h)}
