@@ -547,7 +547,19 @@ function safeDomain(inputUrl: string): string | null {
     catch { return null; }
 }
 
+const CLIENT_ID: Record<string, string> = { WEB: '1', ANDROID: '3', IOS: '5', ANDROID_VR: '28', TVHTML5: '7' };
+
 async function fetchPlayer(videoId: string, clientCtx: any, ua: string): Promise<any> {
+    const headers: Record<string, string> = {
+        'User-Agent': ua,
+        'Content-Type': 'application/json',
+        Origin: 'https://www.youtube.com',
+        Referer: `https://www.youtube.com/watch?v=${videoId}`,
+    };
+    if (CLIENT_ID[clientCtx.clientName]) {
+        headers['X-Youtube-Client-Name'] = CLIENT_ID[clientCtx.clientName];
+        headers['X-Youtube-Client-Version'] = clientCtx.clientVersion;
+    }
     const res = await withRetry(() => axios.post(
         `https://www.youtube.com/youtubei/v1/player?key=${API_KEY}`,
         {
@@ -558,43 +570,32 @@ async function fetchPlayer(videoId: string, clientCtx: any, ua: string): Promise
             playbackContext: { contentPlaybackContext: { html5Preference: 'HTML5_PREF_WANTS' } },
         },
         {
-            headers: {
-                'User-Agent': ua,
-                'Content-Type': 'application/json',
-                Origin: 'https://www.youtube.com',
-                Referer: `https://www.youtube.com/watch?v=${videoId}`,
-            },
+            headers,
             timeout: 20000,
         }
     ));
     return res.data;
 }
 
-async function fetchYouTubePlayer(videoId: string): Promise<any> {
-    try {
-        const d = await fetchPlayer(videoId, ANDROID_CTX, UA_ANDROID);
-        if (d?.streamingData?.formats?.length || d?.streamingData?.adaptiveFormats?.length) {
-            return { source: 'innerTube', client: 'ANDROID', data: d };
+async function fetchYouTubePlayer(videoId: string, diag?: any[]): Promise<any> {
+    const attempts = [
+        { name: 'ANDROID', ctx: ANDROID_CTX, ua: UA_ANDROID },
+        { name: 'IOS', ctx: IOS_CTX, ua: UA_BROWSER },
+        { name: 'WEB', ctx: WEB_CTX, ua: UA_BROWSER },
+    ];
+    for (const at of attempts) {
+        try {
+            const d = await fetchPlayer(videoId, at.ctx, at.ua);
+            const status = d?.playabilityStatus?.status || null;
+            const reason = d?.playabilityStatus?.reason || null;
+            const hasStream = Boolean(d?.streamingData?.formats?.length || d?.streamingData?.adaptiveFormats?.length);
+            diag?.push({ step: 'innerTube', client: at.name, http: 200, play: status, reason, hasStream, hasVideoDetails: Boolean(d?.videoDetails) });
+            if (hasStream) return { source: 'innerTube', client: at.name, data: d };
+            if (d?.videoDetails) return { source: 'innerTube', client: at.name + '-meta', data: d, noStream: true };
+        } catch (err: any) {
+            diag?.push({ step: 'innerTube', client: at.name, error: err?.message, http: err?.response?.status || null, body: typeof err?.response?.data === 'string' ? err.response.data.slice(0, 180) : undefined });
         }
-        if (d?.videoDetails) return { source: 'innerTube', client: 'ANDROID-meta', data: d, noStream: true };
-    } catch { /* next */ }
-
-    try {
-        const d = await fetchPlayer(videoId, IOS_CTX, UA_BROWSER);
-        if (d?.streamingData?.adaptiveFormats?.length) {
-            return { source: 'innerTube', client: 'IOS', data: d };
-        }
-        if (d?.videoDetails) return { source: 'innerTube', client: 'IOS-meta', data: d, noStream: true };
-    } catch { /* next */ }
-
-    try {
-        const d = await fetchPlayer(videoId, WEB_CTX, UA_BROWSER);
-        if (d?.streamingData?.formats?.length || d?.streamingData?.adaptiveFormats?.length) {
-            return { source: 'innerTube', client: 'WEB', data: d };
-        }
-        if (d?.videoDetails) return { source: 'innerTube', client: 'WEB-meta', data: d, noStream: true };
-    } catch { /* next */ }
-
+    }
     return null;
 }
 
@@ -871,7 +872,7 @@ function parseCommentCount(nextData: any): number | null {
     }
 }
 
-export async function youtubeDL(inputUrl: string, baseUrl?: string): Promise<any> {
+export async function youtubeDL(inputUrl: string, baseUrl?: string, diag?: any[]): Promise<any> {
     if (isPostUrl(inputUrl)) return youtubePostDL(inputUrl, baseUrl);
 
     const startedAt = new Date().toISOString();
@@ -885,7 +886,7 @@ export async function youtubeDL(inputUrl: string, baseUrl?: string): Promise<any
     const musicUrl = `https://music.youtube.com/watch?v=${videoId}`;
 
     const [playerRes, nextRes] = await Promise.allSettled([
-        fetchYouTubePlayer(videoId),
+        fetchYouTubePlayer(videoId, diag),
         fetchYouTubeNext(videoId),
     ]);
     const player: any = playerRes.status === 'fulfilled' ? playerRes.value : null;
@@ -894,13 +895,16 @@ export async function youtubeDL(inputUrl: string, baseUrl?: string): Promise<any
     let fallback: any = null;
     if (!player) {
         const inv = await fetchFromInvidious(videoId);
+        diag?.push({ step: 'fallback', source: 'invidious', ok: Boolean(inv) });
         if (inv) fallback = { source: 'invidious', data: inv };
         else {
             const pip = await fetchFromPiped(videoId);
+            diag?.push({ step: 'fallback', source: 'piped', ok: Boolean(pip) });
             if (pip) fallback = { source: 'piped', data: pip };
         }
         if (!fallback) {
             const emb = await fetchYouTubeEmbed(videoId);
+            diag?.push({ step: 'fallback', source: 'embed', ok: Boolean(emb?.streamingData || emb?.videoDetails) });
             if (emb?.streamingData || emb?.videoDetails) fallback = { source: 'embed', data: emb };
         }
     }
@@ -1192,6 +1196,7 @@ async function proxyMedia(req: Request, res: Response): Promise<void> {
 
 export default async function youtubeHandler(req: Request, res: Response) {
     const hasDl = req.query.dl !== undefined && req.query.dl !== '';
+    const diag: any[] = [];
 
     try {
         if (hasDl) {
@@ -1208,11 +1213,15 @@ export default async function youtubeHandler(req: Request, res: Response) {
         }
 
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const result = await youtubeDL(url, baseUrl);
+        const result = await youtubeDL(url, baseUrl, diag);
+        if (req.query.debug) result.debug = diag;
         return res.json(result);
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Internal Server Error';
         const bad = /invalid|tidak ditemukan|could not extract|required/i.test(message);
-        return res.status(bad ? 400 : 500).json({ status: false, message });
+        return res.status(bad ? 400 : 500).json({
+            status: false, message,
+            ...(req.query.debug ? { debug: diag } : {}),
+        });
     }
 }
