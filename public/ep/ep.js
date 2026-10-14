@@ -98,7 +98,7 @@ async function load() {
   const segs = location.pathname.split('/').filter(Boolean);
   const cat = segs[0] || '', ep = segs[1] || '';
   try {
-    const cfg = await (await fetch('/config')).json();
+    const cfg = window.__CFG__ || {};
     if (cfg.settings?.favicon) $('favicon').href = cfg.settings.favicon;
     const routes = ((cfg.tags || {})[cat] || []);
     const route = routes.find((r) => r.filename === ep);

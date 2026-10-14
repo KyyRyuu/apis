@@ -33,8 +33,8 @@ async function init() {
     if (!document.getElementById("term-logs")) return;
 
     try {
-        const response = await fetch("/config");
-        globalConfig = await response.json();
+        // Config di-inject server-side (window.__CFG__); route /config sudah 404.
+        globalConfig = window.__CFG__ || {};
 
         setUi(globalConfig);
         buildSidebarTree(globalConfig.tags);

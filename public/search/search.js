@@ -156,7 +156,7 @@ $('modelSel').addEventListener('change', () => {
 
 async function load() {
   try {
-    const cfg = await (await fetch('/config')).json();
+    const cfg = window.__CFG__ || {};
     if (cfg.settings?.favicon) $('favicon').href = cfg.settings.favicon;
     if (cfg.settings?.apiName) document.title = `${cfg.settings.apiName} | Search`;
     searchRoutes = ((cfg.tags || {}).search || []).map((r) => ({ cat: 'search', ...r }));

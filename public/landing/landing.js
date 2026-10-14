@@ -120,8 +120,7 @@ $('craftCopy').addEventListener('click', async () => {
 
 /* data */
 async function load() {
-  let cfg = null;
-  try { cfg = await (await fetch('/config')).json(); } catch {}
+  let cfg = window.__CFG__ || null;
   const s = (cfg && cfg.settings) || {};
   const name = s.apiName || 'K-APIs';
   document.title = `${name} — API Platform`;

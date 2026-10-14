@@ -78,6 +78,43 @@ const findConfig = () => {
 const configPath = findConfig();
 const config = buildConfig(configPath, process.cwd());
 
+// Config publik (whitelist) untuk di-inject ke halaman HTML.
+// Route /config SENGAJA DIHAPUS (404) — data yang dibutuhkan UI
+// disuntik server-side via window.__CFG__ agar tidak ada endpoint enumerasi.
+const publicCfg = () => {
+    const s = config.settings || {};
+    return {
+        creator: s.creator,
+        settings: {
+            creator: s.creator,
+            apiName: s.apiName,
+            description: s.description,
+            apiVersion: s.apiVersion,
+            favicon: s.favicon,
+            thumbnail: s.thumbnail,
+            channelUrl: s.channelUrl,
+            github: s.github
+        },
+        tags: config.tags
+    };
+};
+
+// Serve halaman HTML + suntik window.__CFG__ sebelum </head>.
+// JSON di-escape (< -> \u003c) agar tidak bisa break out dari <script>.
+const servePage = (res: Response, file: string) => {
+    try {
+        const html = fs.readFileSync(file, 'utf-8');
+        const injected = html.replace(
+            '</head>',
+            `<script>window.__CFG__=${JSON.stringify(publicCfg()).replace(/</g, '\\u003c')};</script></head>`
+        );
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(injected);
+    } catch {
+        return res.sendFile(file);
+    }
+};
+
 const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
 
@@ -152,9 +189,9 @@ app.get('/stats/data', (req: Request, res: Response) => {
         return res.json({
             status: true,
             server: {
+                // SENGAJA dibuang: hostname, cpu model/speed (fingerprinting).
                 platform: os.platform(),
                 arch: os.arch(),
-                hostname: os.hostname(),
                 uptime: formatUptime(os.uptime()),
                 node_version: process.version,
                 memory: {
@@ -164,8 +201,6 @@ app.get('/stats/data', (req: Request, res: Response) => {
                     percent: Math.round((usedMemory / totalMemory) * 100)
                 },
                 cpu: {
-                    model: cpus[0]?.model || 'Unknown',
-                    speed: `${cpus[0]?.speed || 0} MHz`,
                     cores: cpus.length,
                     load: os.loadavg()[0].toFixed(2)
                 }
@@ -178,100 +213,88 @@ app.get('/stats/data', (req: Request, res: Response) => {
 });
 
 app.get('/stats', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'stats', 'stats.html')
     );
 });
 
-app.get('/config', (req: Request, res: Response) => {
-    try {
-        // Whitelist field publik saja. Kalau suatu saat config.json ketambahan
-        // secret (API key/token), tidak akan ikut bocor ke /config.
-        const s = config.settings || {};
-        return res.json({
-            creator: s.creator,
-            settings: {
-                creator: s.creator,
-                apiName: s.apiName,
-                description: s.description,
-                apiVersion: s.apiVersion,
-                favicon: s.favicon,
-                thumbnail: s.thumbnail,
-                channelUrl: s.channelUrl,
-                github: s.github
-            },
-            tags: config.tags
-        });
-    } catch {
-        return res.status(500).json({
-            creator: 'IkyyKzy',
-            error: 'Internal Server Error'
-        });
-    }
-});
+// NOTE: route /config SENGAJA TIDAK ADA -> 404 (lihat handler 404 di bawah).
+// UI mengambil config dari window.__CFG__ yang di-inject servePage.
 
 app.get('/', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'landing', 'landing.html')
     );
 });
 
 app.get('/docs', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'docs', 'docs.html')
     );
 });
 
 app.get('/ai', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'ai', 'ai.html')
     );
 });
 
 app.get('/api/ai', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'ai', 'ai.html')
     );
 });
 
 app.get('/download', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'download', 'download.html')
     );
 });
 
 app.get('/api/download', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'download', 'download.html')
     );
 });
 
 app.get('/ai/:model', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'ai', 'ai.html')
     );
 });
 
 app.get('/download/:name', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'download', 'download.html')
     );
 });
 
 app.get('/search', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'search', 'search.html')
     );
 });
 
 app.get('/api/search', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'search', 'search.html')
     );
 });
 
 app.get('/search/:name', (req: Request, res: Response) => {
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'search', 'search.html')
     );
 });
@@ -279,7 +302,8 @@ app.get('/search/:name', (req: Request, res: Response) => {
 app.get('/:cat/:ep', (req: Request, res: Response, next: NextFunction) => {
     const reserved = ['api', 'src', 'landing', 'docs', 'stats', 'config', 'ai', 'download'];
     if (reserved.includes(req.params.cat)) return next();
-    return res.sendFile(
+    return servePage(
+        res,
         path.join(process.cwd(), 'public', 'ep', 'ep.html')
     );
 });

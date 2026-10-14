@@ -91,11 +91,11 @@ async function fetchStats() {
     if (!data.status) return;
     const s = data.server;
     $('uptime').textContent = s.uptime;
-    $('platform').textContent = s.hostname;
+    $('platform').textContent = (s.platform || '—') + '/' + (s.arch || '');
     $('osBadge').textContent = (s.platform || '—') + '';
     $('arch').textContent = s.arch;
     $('node-ver').textContent = s.node_version;
-    $('cpu-model').textContent = `${s.cpu.model} (${s.cpu.cores} cores)`;
+    $('cpu-model').textContent = `${s.cpu.cores} cores`;
     const loadPct = Math.min(100, Math.round(parseFloat(s.cpu.load) * 10));
     $('cpu-load').textContent = (isNaN(loadPct) ? 0 : loadPct) + '% load';
     $('mem-used').textContent = s.memory.used;
@@ -117,8 +117,7 @@ async function fetchStats() {
 
 async function fetchEpCount() {
   try {
-    const r = await fetch('/config');
-    const c = await r.json();
+    const c = window.__CFG__ || {};
     let n = 0;
     Object.values(c.tags || {}).forEach((a) => { n += (a || []).length; });
     $('epCount').textContent = n;

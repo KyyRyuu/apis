@@ -596,7 +596,7 @@ function renderSwitch(routes, active) {
 
 async function load() {
   try {
-    const cfg = await (await fetch('/config')).json();
+    const cfg = window.__CFG__ || {};
     if (cfg.settings?.favicon) $('favicon').href = cfg.settings.favicon;
     const apiName = cfg.settings?.apiName || 'K-APIs';
     const routes = ((cfg.tags || {}).download || []).map((r) => ({ cat: 'download', ...r }));

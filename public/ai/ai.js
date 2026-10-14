@@ -120,7 +120,7 @@ $('newChatBtn').addEventListener('click', () => {
 /* boot */
 async function load() {
   try {
-    const cfg = await (await fetch('/config')).json();
+    const cfg = window.__CFG__ || {};
     if (cfg.settings?.favicon) $('favicon').href = cfg.settings.favicon;
     if (cfg.settings?.apiName) document.title = `${cfg.settings.apiName} | AI Chat`;
     aiRoutes = ((cfg.tags || {}).ai || []).map((r) => ({ cat: 'ai', ...r }));
