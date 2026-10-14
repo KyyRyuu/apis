@@ -24,5 +24,57 @@
         "description": "YouTube URL (watch / shorts / live / embed / music.youtube.com / youtu.be / post)"
       }
     ]
+  },
+  {
+    "name": "Twitter Downloader",
+    "endpoint": "/api/download/twitter",
+    "filename": "twitter",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Tweet URL (x.com/…/status/…) atau tweet ID"
+      }
+    ]
+  },
+  {
+    "name": "TikTok Downloader",
+    "endpoint": "/api/download/tiktok",
+    "filename": "tiktok",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "TikTok URL (video / photo / slide / story, termasuk vt.tiktok.com pendek)"
+      }
+    ]
+  },
+  {
+    "name": "Instagram Downloader",
+    "endpoint": "/api/download/instagram",
+    "filename": "instagram",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Instagram URL (reel / post / tv, support slide)"
+      }
+    ]
+  },
+  {
+    "name": "Terabox Downloader",
+    "endpoint": "/api/download/terabox",
+    "filename": "terabox",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Terabox share URL (terabox.com/…?surl=…)"
+      }
+    ]
   }
 ]
