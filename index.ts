@@ -27,7 +27,38 @@ if (!port) {
     console.error('[✗] PORT is not configured');
     process.exit(1);
 }
-app.set('trust proxy', true);
+// HANYA percaya 1 hop proxy (edge Railway). trust proxy=true membuat
+// X-Forwarded-For spoofable -> rate limit bisa di-bypass tak terbatas.
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+// Security headers (tanpa dep tambahan; CSP dilewat agar UI inline/CDN tak pecah)
+app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    if (req.protocol === 'https') {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+    next();
+});
+// Tolak query value raksasa (b64 bomb / log flooding). URL media terpanjang
+// (googlevideo b64) < 4KB; batas 8KB aman untuk semua endpoint.
+const MAX_QUERY_LEN = 8000;
+app.use((req: Request, res: Response, next: NextFunction) => {
+    try {
+        const vals: string[] = [];
+        for (const v of Object.values(req.query)) {
+            if (typeof v === 'string') vals.push(v);
+            else if (Array.isArray(v)) for (const x of v) if (typeof x === 'string') vals.push(x);
+        }
+        if (vals.some((v) => v.length > MAX_QUERY_LEN)) {
+            return res.status(414).json({ status: false, creator: 'IkyyKzy', message: 'Query terlalu panjang' });
+        }
+    } catch { /* abaikan */ }
+    next();
+});
 const configPaths = [
     path.join(__dirname, 'src', 'config.json'),
     path.join(__dirname, '..', 'src', 'config.json'),
@@ -90,8 +121,8 @@ const logRequest = (req: Request, res: Response) => {
 };
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 app.use((req: Request, res: Response, next: NextFunction) => {
     res.on('finish', () => logRequest(req, res));
@@ -99,7 +130,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use(express.static(path.join(process.cwd(), 'public')));
-app.use('/src', express.static(path.join(process.cwd(), 'src')));
+// /src HANYA boleh serve gambar (favicon/thumbnail). File .ts/.js/.json
+// adalah source code -> JANGAN pernah di-serve (code leak).
+const SRC_IMG_EXT = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.ico', '.svg']);
+app.use('/src', (req: Request, res: Response, next: NextFunction) => {
+    if (!SRC_IMG_EXT.has(path.extname(req.path).toLowerCase())) {
+        return res.status(404).json({ status: false, creator: 'IkyyKzy', message: 'Not found' });
+    }
+    next();
+}, express.static(path.join(process.cwd(), 'src')));
 
 app.use(rateLimit); // rate limiter
 loadRouter(app, config); // endpoints router
@@ -146,13 +185,26 @@ app.get('/stats', (req: Request, res: Response) => {
 
 app.get('/config', (req: Request, res: Response) => {
     try {
+        // Whitelist field publik saja. Kalau suatu saat config.json ketambahan
+        // secret (API key/token), tidak akan ikut bocor ke /config.
+        const s = config.settings || {};
         return res.json({
-            creator: config.settings.creator,
-            ...config
+            creator: s.creator,
+            settings: {
+                creator: s.creator,
+                apiName: s.apiName,
+                description: s.description,
+                apiVersion: s.apiVersion,
+                favicon: s.favicon,
+                thumbnail: s.thumbnail,
+                channelUrl: s.channelUrl,
+                github: s.github
+            },
+            tags: config.tags
         });
     } catch {
         return res.status(500).json({
-            creator: config.settings.creator,
+            creator: 'IkyyKzy',
             error: 'Internal Server Error'
         });
     }

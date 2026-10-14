@@ -11,7 +11,7 @@ export default async function pinterestHandler(req: Request, res: Response) {
         });
     }
 
-    const url = `https://id.pinterest.com/resource/BaseSearchResource/get/?source_url=/search/pins/?q=${query}&rs=rs&data=${encodeURIComponent(JSON.stringify({
+    const url = `https://id.pinterest.com/resource/BaseSearchResource/get/?source_url=/search/pins/?q=${encodeURIComponent(query)}&rs=rs&data=${encodeURIComponent(JSON.stringify({
         options: {
             query,
             rs: 'rs',
@@ -23,6 +23,8 @@ export default async function pinterestHandler(req: Request, res: Response) {
     }))}`;
 
     const response = await axios.get(url, {
+        timeout: 25000,
+        maxRedirects: 5,
         headers: {
             accept: 'application/json, text/javascript, */*; q=0.01',
             'x-pinterest-appstate': 'active',

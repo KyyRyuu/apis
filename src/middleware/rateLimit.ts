@@ -28,18 +28,12 @@ const hasRedis =
 const redis = hasRedis ? Redis.fromEnv() : null;
 
 const getIp = (req: Request): string => {
-  const forwarded = req.headers["x-forwarded-for"];
-  let ip: string;
-
-  if (typeof forwarded === "string") {
-    ip = forwarded.split(",")[0].trim();
-  } else if (Array.isArray(forwarded)) {
-    ip = forwarded[0]?.trim() || "unknown";
-  } else {
-    ip = req.ip || req.socket?.remoteAddress || "unknown";
-  }
-
-  return ip.replace("::ffff:", "").trim();
+    // WAJIB pakai req.ip (di-resolve Express via 'trust proxy' = 1 hop).
+    // Versi lama baca entri PERTAMA X-Forwarded-For -> attacker cukup kirim
+    // header XFF acak tiap request untuk dapat IP baru -> rate limit bypass total.
+    // Dengan trust proxy 1 hop, req.ip = entri TERAKHIR = IP asli yg ditempel edge Railway.
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    return ip.replace('::ffff:', '').trim();
 };
 
 /*

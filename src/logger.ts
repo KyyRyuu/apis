@@ -4,22 +4,18 @@
  */
 import { Request, Response } from 'express';
 
+const realIp = (req: Request): string => {
+    // Sama seperti rate limiter: req.ip (trust proxy 1 hop), bukan XFF mentah.
+    const ip = req.ip || req.socket?.remoteAddress || '';
+    return String(ip).replace('::ffff:', '');
+};
+
 export const logRouterRequest = (
     req: Request,
     res: Response
 ) => {
     res.on('finish', () => {
-        let ip =
-            req.headers['x-forwarded-for'] ||
-            req.socket.remoteAddress ||
-            '';
-        if (Array.isArray(ip)) {
-            ip = ip[0];
-        }
-        if (typeof ip === 'string') {
-            ip = ip.split(',')[0].trim();
-            ip = ip.replace('::ffff:', '');
-        }
+        const ip = realIp(req);
         const status = res.statusCode;
         const url = `${req.protocol}://${req.get(
             'host'
@@ -43,17 +39,7 @@ export const logRouterRequest = (
 export const logRateLimit = (
     req: Request
 ) => {
-    let ip =
-        req.headers['x-forwarded-for'] ||
-        req.socket.remoteAddress ||
-        '';
-    if (Array.isArray(ip)) {
-        ip = ip[0];
-    }
-    if (typeof ip === 'string') {
-        ip = ip.split(',')[0].trim();
-        ip = ip.replace('::ffff:', '');
-    }
+    const ip = realIp(req);
     console.log(
         `[${ip}] = \x1b[31m[429]\x1b[0m RATE LIMIT BAN`
     );

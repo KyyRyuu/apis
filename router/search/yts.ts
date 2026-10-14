@@ -13,6 +13,8 @@ export default async function ytsHandler(req: Request, res: Response) {
 
     const { data } = await axios.get('https://www.youtube.com/results', {
         params: { search_query: query },
+        timeout: 25000,
+        maxRedirects: 5,
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
         }

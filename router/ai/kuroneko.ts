@@ -40,7 +40,9 @@ async function chatWithGemini(
                     headers: {
                         'Content-Type':
                             'application/x-www-form-urlencoded;charset=UTF-8'
-                    }
+                    },
+                    timeout: 25000,
+                    maxRedirects: 5
                 }
             );
 
@@ -165,7 +167,9 @@ async function chatWithGemini(
                     'x-goog-ext-525001261-jspb':
                         '[1,null,null,null,"9ec249fc9ad08861",null,null,null,[4]]',
                     Cookie: cookie
-                }
+                },
+                timeout: 60000,
+                maxRedirects: 5
             }
         );
 

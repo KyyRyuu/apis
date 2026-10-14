@@ -20,7 +20,7 @@ export default async function shortUrlHandler(req: Request, res: Response) {
     }
 
     const apiUrl = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}&alias=${encodeURIComponent(alias)}`;
-    const response = await axios.get(apiUrl);
+    const response = await axios.get(apiUrl, { timeout: 25000, maxRedirects: 5 });
 
     if (response.data === 'Error') {
         return res.status(400).json({
