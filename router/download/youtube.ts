@@ -13,6 +13,8 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { URL } from 'url';
+import * as https from 'https';
+import * as dns from 'dns';
 
 const UA_BROWSER = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36';
 const UA_ANDROID = 'com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip';
@@ -642,6 +644,53 @@ async function fetchPlayer(videoId: string, clientCtx: any, ua: string, embed = 
     return res.data;
 }
 
+// EKSPERIMEN bypass: paksa egress IPv6 (egress IPv4 Railway kena bot-check,
+// IPv6 mungkin beda reputasi). Gagal -> jatuh ke fallback seperti biasa.
+let v6Agent: any = null;
+function getV6Agent(): any {
+    if (!v6Agent) {
+        v6Agent = new https.Agent({
+            keepAlive: true,
+            lookup: (hostname: string, opts: any, cb: any) =>
+                dns.lookup(hostname, { ...(opts || {}), family: 6 }, cb),
+        });
+    }
+    return v6Agent;
+}
+
+async function fetchPlayerV6(videoId: string): Promise<any> {
+    if (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.YOUTUBE_PROXY) {
+        throw new Error('v6 skipped (proxy env aktif)');
+    }
+    const headers: Record<string, string> = {
+        'User-Agent': UA_ANDROID,
+        'Content-Type': 'application/json',
+        Origin: 'https://www.youtube.com',
+        Referer: `https://www.youtube.com/watch?v=${videoId}`,
+    };
+    if (CLIENT_ID[ANDROID_CTX.clientName]) {
+        headers['X-Youtube-Client-Name'] = CLIENT_ID[ANDROID_CTX.clientName];
+        headers['X-Youtube-Client-Version'] = ANDROID_CTX.clientVersion;
+    }
+    const res = await axios.post(
+        `https://www.youtube.com/youtubei/v1/player?key=${API_KEY}`,
+        {
+            context: { client: ANDROID_CTX },
+            videoId,
+            racyCheckOk: true,
+            contentCheckOk: true,
+            playbackContext: { contentPlaybackContext: { html5Preference: 'HTML5_PREF_WANTS' } },
+        },
+        {
+            headers,
+            httpsAgent: getV6Agent(),
+            timeout: 12000,
+            validateStatus: (s) => s < 500,
+        }
+    );
+    return res.data;
+}
+
 async function fetchYouTubePlayer(videoId: string, diag?: any[]): Promise<any> {
     const attempts = [
         { name: 'ANDROID_VR', ctx: ANDROID_VR_CTX, ua: UA_VR, embed: false },
@@ -666,6 +715,18 @@ async function fetchYouTubePlayer(videoId: string, diag?: any[]): Promise<any> {
         } catch (err: any) {
             diag?.push({ step: 'innerTube', client: at.name, error: err?.message, http: err?.response?.status || null, body: typeof err?.response?.data === 'string' ? err.response.data.slice(0, 180) : undefined });
         }
+    }
+    // eksperimen terakhir sebelum fallback: egress IPv6
+    try {
+        const d = await fetchPlayerV6(videoId);
+        const status = d?.playabilityStatus?.status || null;
+        const reason = d?.playabilityStatus?.reason || null;
+        const hasStream = Boolean(d?.streamingData?.formats?.length || d?.streamingData?.adaptiveFormats?.length);
+        diag?.push({ step: 'innerTube', client: 'ANDROID_V6', http: 200, play: status, reason, hasStream, hasVideoDetails: Boolean(d?.videoDetails) });
+        if (hasStream) return { source: 'innerTube', client: 'ANDROID_V6', data: d };
+        if (d?.videoDetails && !metaOnly) metaOnly = { source: 'innerTube', client: 'ANDROID_V6-meta', data: d, noStream: true };
+    } catch (err: any) {
+        diag?.push({ step: 'innerTube', client: 'ANDROID_V6', error: err?.message, http: err?.response?.status || null });
     }
     return metaOnly;
 }
