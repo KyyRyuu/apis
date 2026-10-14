@@ -75,18 +75,44 @@ const UA_VR = 'com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Andr
 const UA_TV = 'Mozilla/5.0 (PlayStation; PlayStation 4/12.00) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15';
 
 const INVIDIOUS_INSTANCES = [
+    'https://inv.nadeko.net',
+    'https://invidious.nerdvpn.de',
     'https://yewtu.be',
-    'https://invidious.snopyta.org',
-    'https://invidious.kavin.rocks',
-    'https://invidious.projectsegfau.lt',
-    'https://invidious.privacyredirect.com',
+    'https://invidious.f5.si',
+    'https://iv.melmac.space',
+    'https://id.420129.xyz',
+    'https://invidious.reallyaweso.me',
+    'https://inv.zzls.xyz',
 ];
 
 const PIPED_INSTANCES = [
-    'https://piped.kavin.rocks',
-    'https://piped-api.garudalinux.org',
-    'https://piped.rishabh3354.dev',
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.adminforge.de',
+    'https://api.piped.private.coffee',
+    'https://pipedapi.reallyaweso.me',
+    'https://pipedapi.ducks.party',
+    'https://pipedapi.drgns.space',
 ];
+
+const PROXY_URL = process.env.YOUTUBE_PROXY || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
+
+function proxyConf(): any {
+    if (!PROXY_URL) return {};
+    try {
+        const u = new URL(PROXY_URL);
+        const port = Number(u.port) || (u.protocol === 'https:' ? 443 : 80);
+        return {
+            proxy: {
+                protocol: u.protocol.replace(':', ''),
+                host: u.hostname,
+                port,
+                ...(u.username ? { auth: { username: decodeURIComponent(u.username), password: decodeURIComponent(u.password) } } : {}),
+            },
+        };
+    } catch {
+        return {};
+    }
+}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -241,6 +267,7 @@ async function fetchPostHtml(postId: string): Promise<string> {
             Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
         },
+        ...proxyConf(),
         timeout: 20000,
     }));
     return String(res.data || '');
@@ -316,6 +343,7 @@ async function verifyImageUrl(url: string): Promise<any> {
     if (!url) { out.error = 'URL tidak tersedia'; return out; }
     try {
         const head = await axios.head(url, {
+            ...proxyConf(),
             timeout: 15000,
             validateStatus: (s) => s < 500,
             headers: { 'User-Agent': UA_BROWSER, Referer: 'https://www.youtube.com/' },
@@ -327,6 +355,7 @@ async function verifyImageUrl(url: string): Promise<any> {
     }
     try {
         const res = await axios.get(url, {
+            ...proxyConf(),
             timeout: 15000,
             validateStatus: (s) => s < 500,
             responseType: 'arraybuffer',
@@ -606,6 +635,7 @@ async function fetchPlayer(videoId: string, clientCtx: any, ua: string, embed = 
         },
         {
             headers,
+            ...proxyConf(),
             timeout: 20000,
         }
     ));
@@ -652,6 +682,7 @@ async function fetchYouTubeNext(videoId: string): Promise<any> {
                     Origin: 'https://www.youtube.com',
                     Referer: `https://www.youtube.com/watch?v=${videoId}`,
                 },
+                ...proxyConf(),
                 timeout: 20000,
             }
         ));
@@ -665,6 +696,7 @@ async function fetchYouTubeEmbed(videoId: string): Promise<any> {
     try {
         const res = await withRetry(() => axios.get(`https://www.youtube.com/embed/${videoId}`, {
             headers: { 'User-Agent': UA_EMBED },
+            ...proxyConf(),
             timeout: 15000,
         }));
         const html = String(res.data || '');
@@ -683,6 +715,7 @@ async function fetchFromInvidious(videoId: string): Promise<any> {
         try {
             const res = await withRetry(() => axios.get(`${instance}/api/v1/videos/${videoId}`, {
                 headers: { 'User-Agent': UA_BROWSER, Accept: 'application/json' },
+                ...proxyConf(),
                 timeout: 15000,
                 transformResponse: [(data: any) => {
                     try { return typeof data === 'string' ? JSON.parse(data) : data; }
@@ -703,6 +736,7 @@ async function fetchFromPiped(videoId: string): Promise<any> {
         try {
             const res = await withRetry(() => axios.get(`${instance}/streams/${videoId}`, {
                 headers: { 'User-Agent': UA_BROWSER, Accept: 'application/json' },
+                ...proxyConf(),
                 timeout: 15000,
                 transformResponse: [(data: any) => {
                     try { return typeof data === 'string' ? JSON.parse(data) : data; }
@@ -804,6 +838,7 @@ async function checkFormatUrl(url: string): Promise<any> {
     if (!url) { out.error = 'URL tidak tersedia'; return out; }
     try {
         const res = await axios.get(url, {
+            ...proxyConf(),
             timeout: 15000,
             validateStatus: (s) => s < 500,
             responseType: 'arraybuffer',
@@ -1212,6 +1247,7 @@ async function proxyMedia(req: Request, res: Response): Promise<void> {
 
     const upstream = await axios.get(mediaUrl, {
         responseType: 'stream',
+        ...proxyConf(),
         timeout: 30000,
         decompress: false,
         validateStatus: (s) => s < 400,
