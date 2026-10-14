@@ -50,6 +50,30 @@ const IOS_CTX = {
 
 const WEB_CTX = { clientName: 'WEB', clientVersion: WEB_VERSION, hl: 'en', gl: 'US' };
 
+const ANDROID_VR_CTX = {
+    clientName: 'ANDROID_VR',
+    clientVersion: '1.62.27',
+    hl: 'en',
+    gl: 'US',
+    deviceMake: 'Oculus',
+    deviceModel: 'Quest 3',
+    osName: 'Android',
+    osVersion: '12',
+    androidSdkVersion: 32,
+    userAgent: 'com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Android 12; GB) gzip',
+};
+
+const TVHTML5_CTX = { clientName: 'TVHTML5', clientVersion: '7.20250101.00.00', hl: 'en', gl: 'US' };
+
+const MWEB_CTX = { clientName: 'MWEB', clientVersion: '2.20250101.00.00', hl: 'en', gl: 'US' };
+
+const TV_EMBED_CTX = { clientName: 'TVHTML5_SIMPLY_EMBEDDED_PLAYER', clientVersion: '2.0', hl: 'en', gl: 'US' };
+
+const WEB_EMBED_CTX = { clientName: 'WEB_EMBEDDED_PLAYER', clientVersion: '1.20250101.00.00', hl: 'en', gl: 'US' };
+
+const UA_VR = 'com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Android 12; GB) gzip';
+const UA_TV = 'Mozilla/5.0 (PlayStation; PlayStation 4/12.00) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15';
+
 const INVIDIOUS_INSTANCES = [
     'https://yewtu.be',
     'https://invidious.snopyta.org',
@@ -547,9 +571,18 @@ function safeDomain(inputUrl: string): string | null {
     catch { return null; }
 }
 
-const CLIENT_ID: Record<string, string> = { WEB: '1', ANDROID: '3', IOS: '5', ANDROID_VR: '28', TVHTML5: '7' };
+const CLIENT_ID: Record<string, string> = {
+    WEB: '1',
+    MWEB: '2',
+    ANDROID: '3',
+    IOS: '5',
+    TVHTML5: '7',
+    ANDROID_VR: '28',
+    WEB_EMBEDDED_PLAYER: '56',
+    TVHTML5_SIMPLY_EMBEDDED_PLAYER: '85',
+};
 
-async function fetchPlayer(videoId: string, clientCtx: any, ua: string): Promise<any> {
+async function fetchPlayer(videoId: string, clientCtx: any, ua: string, embed = false): Promise<any> {
     const headers: Record<string, string> = {
         'User-Agent': ua,
         'Content-Type': 'application/json',
@@ -560,10 +593,12 @@ async function fetchPlayer(videoId: string, clientCtx: any, ua: string): Promise
         headers['X-Youtube-Client-Name'] = CLIENT_ID[clientCtx.clientName];
         headers['X-Youtube-Client-Version'] = clientCtx.clientVersion;
     }
+    const context: any = { client: clientCtx };
+    if (embed) context.thirdParty = { embedUrl: 'https://www.youtube.com/' };
     const res = await withRetry(() => axios.post(
         `https://www.youtube.com/youtubei/v1/player?key=${API_KEY}`,
         {
-            context: { client: clientCtx },
+            context,
             videoId,
             racyCheckOk: true,
             contentCheckOk: true,
@@ -579,24 +614,30 @@ async function fetchPlayer(videoId: string, clientCtx: any, ua: string): Promise
 
 async function fetchYouTubePlayer(videoId: string, diag?: any[]): Promise<any> {
     const attempts = [
-        { name: 'ANDROID', ctx: ANDROID_CTX, ua: UA_ANDROID },
-        { name: 'IOS', ctx: IOS_CTX, ua: UA_BROWSER },
-        { name: 'WEB', ctx: WEB_CTX, ua: UA_BROWSER },
+        { name: 'ANDROID_VR', ctx: ANDROID_VR_CTX, ua: UA_VR, embed: false },
+        { name: 'ANDROID', ctx: ANDROID_CTX, ua: UA_ANDROID, embed: false },
+        { name: 'IOS', ctx: IOS_CTX, ua: UA_BROWSER, embed: false },
+        { name: 'TVHTML5', ctx: TVHTML5_CTX, ua: UA_TV, embed: false },
+        { name: 'TV_EMBED', ctx: TV_EMBED_CTX, ua: UA_TV, embed: true },
+        { name: 'WEB_EMBED', ctx: WEB_EMBED_CTX, ua: UA_BROWSER, embed: true },
+        { name: 'MWEB', ctx: MWEB_CTX, ua: UA_BROWSER, embed: false },
+        { name: 'WEB', ctx: WEB_CTX, ua: UA_BROWSER, embed: false },
     ];
+    let metaOnly: any = null;
     for (const at of attempts) {
         try {
-            const d = await fetchPlayer(videoId, at.ctx, at.ua);
+            const d = await fetchPlayer(videoId, at.ctx, at.ua, at.embed);
             const status = d?.playabilityStatus?.status || null;
             const reason = d?.playabilityStatus?.reason || null;
             const hasStream = Boolean(d?.streamingData?.formats?.length || d?.streamingData?.adaptiveFormats?.length);
             diag?.push({ step: 'innerTube', client: at.name, http: 200, play: status, reason, hasStream, hasVideoDetails: Boolean(d?.videoDetails) });
             if (hasStream) return { source: 'innerTube', client: at.name, data: d };
-            if (d?.videoDetails) return { source: 'innerTube', client: at.name + '-meta', data: d, noStream: true };
+            if (d?.videoDetails && !metaOnly) metaOnly = { source: 'innerTube', client: at.name + '-meta', data: d, noStream: true };
         } catch (err: any) {
             diag?.push({ step: 'innerTube', client: at.name, error: err?.message, http: err?.response?.status || null, body: typeof err?.response?.data === 'string' ? err.response.data.slice(0, 180) : undefined });
         }
     }
-    return null;
+    return metaOnly;
 }
 
 async function fetchYouTubeNext(videoId: string): Promise<any> {
