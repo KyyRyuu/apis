@@ -42,6 +42,11 @@ const THREAD_SAMPLES = [
   ['cth: video', 'https://www.threads.com/share/BAo4O5AVfz/'],
   ['cth: carousel', 'https://www.threads.com/share/BAdzD60DJQ/']
 ];
+const YOUTUBE_SAMPLES = [
+  ['cth: video', 'https://youtu.be/b-9tRgohoDQ'],
+  ['cth: shorts', 'https://youtube.com/shorts/s4AeeuCSSf8'],
+  ['cth: music', 'https://music.youtube.com/watch?v=fFMPxt-XNIk']
+];
 let saverBusy = false;
 let saverRoute = null;
 function saverKey() {
@@ -66,11 +71,142 @@ function setSaver(route) {
       b.addEventListener('click', () => { $('dlInput').value = sample; runSaver(sample); });
       chips.appendChild(b);
     });
+  } else if (route.filename === 'youtube') {
+    YOUTUBE_SAMPLES.forEach(([label, sample]) => {
+      const b = document.createElement('button');
+      b.className = 'chip';
+      b.type = 'button';
+      b.textContent = label;
+      b.addEventListener('click', () => { $('dlInput').value = sample; runSaver(sample); });
+      chips.appendChild(b);
+    });
   }
 }
 
 function dlBtn(href, label, fname) {
   return `<a class="btn grn sm" href="${esc(href)}" download="${esc(fname)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> ${esc(label)}</a>`;
+}
+
+function fnameOf(href, fallback) {
+  try {
+    const u = new URL(href, location.origin);
+    const fn = u.searchParams.get('fn');
+    return fn ? decodeURIComponent(fn) : fallback;
+  } catch { return fallback; }
+}
+
+function renderYouTube(j) {
+  if (j.kind === 'post') return renderYouTubePost(j);
+  const a = j.author || {};
+  const st = j.stats || {};
+  const ver = j.verification || {};
+  const cap = j.caption || {};
+  const prog = j.video?.progressive || null;
+  const adaptive = j.video?.adaptive || [];
+  const audios = j.audio || [];
+  const music = j.music || null;
+  const type = (j.type || 'video').toUpperCase();
+
+  const preview = (prog && prog.download?.proxy) || null;
+  const thumb = j.thumbnail?.url || null;
+
+  let player = '';
+  if (preview) player = `<div class="shot"><video controls preload="metadata" src="${esc(preview)}" poster="${esc(thumb || '')}"></video></div>`;
+  else if (thumb) player = `<div class="shot"><img loading="lazy" src="${esc(thumb)}" alt="thumbnail"></div>`;
+
+  const resRow = (f, i) => {
+    const href = f.download?.proxy || f.url;
+    const ok = f.download?.ok;
+    const ext = fnameOf(href, 'video.mp4').split('.').pop();
+    const label = `${f.quality || f.itag}${f.fps ? '@' + f.fps + 'fps' : ''} ${ext.toUpperCase()}`;
+    const fname = fnameOf(href, `youtube-${j.video_id || 'video'}-${f.itag}.${ext}`);
+    return `<div class="yt-fmt"><span class="yt-lbl">${esc(label)}${ok === false ? ' <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i>' : ''}</span>${dlBtn(href, 'SAVE', fname)}</div>`;
+  };
+
+  const videoFmts = [];
+  if (prog) videoFmts.push(resRow(prog, -1));
+  adaptive.forEach((f, i) => videoFmts.push(resRow(f, i)));
+  const audioFmts = audios.map((f, i) => resRow(f, i));
+
+  const musicHtml = music ? `
+    <div class="yt-sec"><p class="yt-h">MUSIC (AUDIO ONLY)</p>
+      <div class="yt-grid">
+        ${music.best_m4a ? resRow(music.best_m4a, 0) : ''}
+        ${music.best_quality ? resRow(music.best_quality, 1) : ''}
+      </div></div>` : '';
+
+  const tags = [...(cap.hashtags || []).map((t) => '#' + t), ...(cap.mentions || []).map((t) => '@' + t)].join(' ');
+
+  return `
+    <div class="r-hd">
+      ${a.avatar ? `<img src="${esc(a.avatar)}" alt="avatar" loading="lazy">` : ''}
+      <div class="r-who">
+        <b>${esc(a.name || j.video_id || 'YouTube')}</b>
+        <span>${esc(j.published_at ? String(j.published_at).slice(0, 10) : '')} • ${esc(j.subtitle ? j.subtitle.language.toUpperCase() : '')}</span>
+      </div>
+      <span class="typebadge">${esc(type)}</span>
+    </div>
+    <p class="r-cap"><b>${esc(j.title || '')}</b>${j.duration ? ` — ${esc(j.duration)}` : ''}</p>
+    <div class="r-stats">
+      <span><i class="fa-solid fa-eye"></i><b>${fmtNum(st.view)}</b> views</span>
+      <span><i class="fa-solid fa-heart"></i><b>${fmtNum(st.like)}</b> likes</span>
+      <span><i class="fa-solid fa-comment"></i><b>${fmtNum(st.comment)}</b> comments</span>
+      ${a.subscribers ? `<span><i class="fa-solid fa-user"></i><b>${fmtNum(a.subscribers)}</b> subs</span>` : ''}
+    </div>
+    ${player ? `<div class="r-media one">${player}</div>` : ''}
+    <div class="yt-sec"><p class="yt-h">VIDEO (${videoFmts.length})</p><div class="yt-grid">${videoFmts.join('') || '<p class="yt-empty">tidak ada format video</p>'}</div></div>
+    <div class="yt-sec"><p class="yt-h">AUDIO (${audioFmts.length})</p><div class="yt-grid">${audioFmts.join('') || '<p class="yt-empty">tidak ada format audio</p>'}</div></div>
+    ${musicHtml}
+    ${cap.text ? `<p class="r-cap">${esc(cap.text.slice(0, 600))}${tags ? `\n\n${esc(tags)}` : ''}</p>` : ''}
+    <div class="r-actions">
+      <button class="btn sm" id="copyAllBtn" type="button"><i class="fa-solid fa-link"></i> COPY SEMUA LINK</button>
+      <a class="btn sm" href="${esc(j.links?.watch || j.source_url || '#')}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> OPEN YOUTUBE</a>
+    </div>
+    <div class="r-foot">
+      <span>CDN:</span>
+      <span class="${ver.all_ok ? 'vok' : 'vbad'}">${ver.all_ok ? 'ALL OK' : (ver.playable + '/' + ver.checked) + ' OK'}</span>
+      <span>• id ${esc(String(j.video_id || ''))}</span>
+    </div>`;
+}
+
+function renderYouTubePost(j) {
+  const a = j.author || {};
+  const st = j.stats || {};
+  const ver = j.verification || {};
+  const cap = j.caption || {};
+  const list = j.url?.image_list || [];
+  const type = (j.type || 'image').toUpperCase();
+
+  let mediaHtml = '';
+  list.forEach((it) => {
+    const href = it.proxy || it.url;
+    const fname = fnameOf(href, `post-${it.index}.jpg`);
+    mediaHtml += `<div class="shot"><img loading="lazy" src="${esc(href)}" alt="media ${it.index}">${dlBtn(href, `PHOTO ${list.length > 1 ? it.index : ''}`.trim(), fname)}</div>`;
+  });
+  if (!mediaHtml) mediaHtml = '<p style="padding:0 20px 6px;color:var(--mut);font-size:12.5px">Text post — tidak ada media.</p>';
+
+  const tags = [...(cap.hashtags || []).map((t) => '#' + t), ...(cap.mentions || []).map((t) => '@' + t)].join(' ');
+
+  return `
+    <div class="r-hd">
+      ${a.avatar ? `<img src="${esc(a.avatar)}" alt="avatar" loading="lazy">` : ''}
+      <div class="r-who"><b>${esc(a.name || 'YouTube')}</b><span>${esc(j.published_text || '')}</span></div>
+      <span class="typebadge">POST ${esc(type)}</span>
+    </div>
+    ${cap.text ? `<p class="r-cap">${esc(cap.text)}${tags ? `\n\n${esc(tags)}` : ''}</p>` : ''}
+    <div class="r-stats">
+      <span><i class="fa-solid fa-heart"></i><b>${fmtNum(st.like)}</b> likes</span>
+    </div>
+    <div class="r-media ${list.length > 1 ? 'multi' : 'one'}">${mediaHtml}</div>
+    <div class="r-actions">
+      <button class="btn sm" id="copyAllBtn" type="button"><i class="fa-solid fa-link"></i> COPY SEMUA LINK</button>
+      <a class="btn sm" href="${esc(j.links?.post || j.source_url || '#')}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> OPEN POST</a>
+    </div>
+    <div class="r-foot">
+      <span>CDN:</span>
+      <span class="${ver.all_ok ? 'vok' : 'vbad'}">${ver.all_ok ? 'ALL OK' : (ver.playable + '/' + ver.images_checked) + ' OK'}</span>
+      <span>• id ${esc(String(j.post_id || ''))}</span>
+    </div>`;
 }
 
 function renderThreads(j) {
@@ -151,7 +287,8 @@ function renderGeneric(j) {
 function renderResult(j) {
   const box = $('dlResult');
   const isThreads = j && j.url && (j.post_id || j.author || j.stats);
-  box.innerHTML = isThreads ? renderThreads(j) : renderGeneric(j);
+  const isYouTube = j && (j.kind === 'video' || j.kind === 'post') && j.success === true;
+  box.innerHTML = isYouTube ? renderYouTube(j) : (isThreads ? renderThreads(j) : renderGeneric(j));
   box.hidden = false;
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   const allLinks = [];

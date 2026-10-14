@@ -104,6 +104,16 @@ code{font-size:.85em;background:#000;border:1px solid var(--line);padding:1px 7p
 .r-foot{display:flex;gap:8px;align-items:center;padding:12px 20px;border-top:1px solid var(--line);font-size:11px;color:var(--mut);flex-wrap:wrap}
 .vok{color:var(--grn)} .vbad{color:var(--acc)}
 
+/* youtube formats */
+.yt-sec{padding:2px 20px 14px}
+.yt-h{font-family:'Silkscreen',monospace;font-size:10px;letter-spacing:.12em;color:var(--mut);margin:0 0 10px}
+.yt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:9px}
+.yt-fmt{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--elev);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.yt-lbl{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yt-fmt .btn{padding:8px 12px}
+.yt-empty{color:var(--mut);font-size:12.5px;margin:0}
+@media(max-width:520px){.yt-grid{grid-template-columns:1fr}}
+
 /* endpoint cards */
 .shead{margin:4px 0 16px}
 .shead h2{font-size:clamp(24px,3.4vw,34px);margin:0}
