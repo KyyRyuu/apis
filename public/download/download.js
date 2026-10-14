@@ -339,15 +339,73 @@ async function runSaver(rawUrl) {
 $('dlForm').addEventListener('submit', (e) => { e.preventDefault(); runSaver($('dlInput').value); });
 
 /* boot */
+const DL_ICON = {
+  threads: 'fa-solid fa-comment-dots',
+  youtube: 'fa-brands fa-youtube'
+};
+const dlIcon = (f) => DL_ICON[f] || 'fa-solid fa-download';
+
+function renderChooser(routes) {
+  const grid = $('dlPickGrid');
+  grid.innerHTML = '';
+  if (!routes.length) {
+    grid.innerHTML = '<p class="pick-empty">Belum ada downloader tersedia.</p>';
+    return;
+  }
+  routes.forEach((r) => {
+    const card = document.createElement('a');
+    card.className = 'pick-card';
+    card.href = '/download/' + r.filename;
+    card.innerHTML = `
+      <span class="pick-ic"><i class="${dlIcon(r.filename)}"></i></span>
+      <span class="pick-bx">
+        <b>${esc(r.name || r.filename)}</b>
+        <code>${esc(r.endpoint)}</code>
+      </span>
+      <span class="pick-go"><i class="fa-solid fa-arrow-right"></i></span>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderSwitch(routes, active) {
+  const el = $('dlSwitch');
+  el.innerHTML = '';
+  const all = document.createElement('a');
+  all.className = 'sw';
+  all.href = '/download';
+  all.innerHTML = '<i class="fa-solid fa-grip"></i> SEMUA';
+  el.appendChild(all);
+  routes.forEach((r) => {
+    const a = document.createElement('a');
+    a.className = 'sw' + (active && r.filename === active.filename ? ' on' : '');
+    a.href = '/download/' + r.filename;
+    a.innerHTML = `<i class="${dlIcon(r.filename)}"></i> ${esc((r.name || r.filename).split(' ')[0].toUpperCase())}`;
+    el.appendChild(a);
+  });
+}
+
 async function load() {
   try {
     const cfg = await (await fetch('/config')).json();
     if (cfg.settings?.favicon) $('favicon').href = cfg.settings.favicon;
-    if (cfg.settings?.apiName) document.title = `${cfg.settings.apiName} | Downloader`;
+    const apiName = cfg.settings?.apiName || 'K-APIs';
     const routes = ((cfg.tags || {}).download || []).map((r) => ({ cat: 'download', ...r }));
     const segs = location.pathname.split('/').filter(Boolean);
-    const deep = segs.length >= 2 && segs[0] === 'download' ? routes.find((r) => r.filename === segs[1]) : null;
-    setSaver(deep || routes[0] || null);
+    const deepName = segs[0] === 'download' && segs.length >= 2 ? segs[1] : null;
+    const deep = deepName ? routes.find((r) => r.filename === deepName) : null;
+
+    if (deep) {
+      document.title = `${apiName} | ${deep.name || deep.filename}`;
+      $('dlPick').hidden = true;
+      $('dlSaver').hidden = false;
+      renderSwitch(routes, deep);
+      setSaver(deep);
+    } else {
+      document.title = `${apiName} | Downloader`;
+      $('dlPick').hidden = false;
+      $('dlSaver').hidden = true;
+      renderChooser(routes);
+    }
     setPill(true, 'ONLINE');
   } catch (e) {
     setPill(false, 'OFFLINE');

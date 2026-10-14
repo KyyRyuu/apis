@@ -36,27 +36,40 @@
 
 <main class="wrap layout">
   <section aria-label="Downloader">
-    <div class="hero card">
-      <p class="kicker">// PASTE. PREVIEW. SAVE.</p>
-      <h1 id="saverTitle">SAVER</h1>
-      <p class="sub" id="saverSub">Tempel link, intip hasilnya, gas download.</p>
-      <form id="dlForm" class="dlbar" autocomplete="off">
-        <i class="fa-solid fa-link dlic"></i>
-        <input id="dlInput" type="url" inputmode="url" placeholder="https://…" aria-label="Media URL">
-        <button class="btn pri" type="submit" id="dlGo"><i class="fa-solid fa-download"></i> <span>GO</span></button>
-      </form>
-      <div class="chips" id="sampleChips"></div>
+    <div id="dlPick" class="pick" hidden>
+      <div class="pick-hd">
+        <p class="kicker">// PASTE. PREVIEW. SAVE.</p>
+        <h1>SAVER</h1>
+        <p class="sub" id="pickSub">Pilih layanan yang mau kamu download.</p>
+      </div>
+      <div class="pick-grid" id="dlPickGrid"></div>
+      <p class="hint">Mau test mentah via JSON? Buka di <a href="/docs?cat=download">docs → download</a>.</p>
     </div>
-    <div id="dlProg" class="prog card" hidden>
-      <div class="spin"></div>
-      <p id="dlProgTxt">Fetching…</p>
+
+    <div id="dlSaver" hidden>
+      <nav class="switcher" id="dlSwitch" aria-label="Ganti downloader"></nav>
+      <div class="hero card">
+        <p class="kicker" id="saverKicker">// PASTE. PREVIEW. SAVE.</p>
+        <h1 id="saverTitle">SAVER</h1>
+        <p class="sub" id="saverSub">Tempel link, intip hasilnya, gas download.</p>
+        <form id="dlForm" class="dlbar" autocomplete="off">
+          <i class="fa-solid fa-link dlic"></i>
+          <input id="dlInput" type="url" inputmode="url" placeholder="https://…" aria-label="Media URL">
+          <button class="btn pri" type="submit" id="dlGo"><i class="fa-solid fa-download"></i> <span>GO</span></button>
+        </form>
+        <div class="chips" id="sampleChips"></div>
+      </div>
+      <div id="dlProg" class="prog card" hidden>
+        <div class="spin"></div>
+        <p id="dlProgTxt">Fetching…</p>
+      </div>
+      <div id="dlErr" class="err card" hidden>
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div><b>FAILED</b><p id="dlErrMsg">error</p></div>
+      </div>
+      <article id="dlResult" class="result card" hidden aria-label="Hasil download"></article>
+      <p class="hint">Mau test mentah via JSON? Buka di <a href="/docs?cat=download">docs → download</a>.</p>
     </div>
-    <div id="dlErr" class="err card" hidden>
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      <div><b>FAILED</b><p id="dlErrMsg">error</p></div>
-    </div>
-    <article id="dlResult" class="result card" hidden aria-label="Hasil download"></article>
-    <p class="hint">Mau test mentah via JSON? Buka di <a href="/docs?cat=download">docs → download</a>.</p>
   </section>
 </main>
 
