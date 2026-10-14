@@ -1219,6 +1219,34 @@ export async function youtubeDL(inputUrl: string, baseUrl?: string, diag?: any[]
 
 // ---------- proxy stream (inject header otomatis) ----------
 
+async function fetchUpstream(mediaUrl: string, headers: Record<string, string>): Promise<any> {
+    return axios.get(mediaUrl, {
+        responseType: 'stream',
+        ...proxyConf(),
+        timeout: 30000,
+        decompress: false,
+        validateStatus: (s) => s < 400,
+        maxRedirects: 5,
+        headers,
+    });
+}
+
+// URL googlevideo kedaluwarsa (~6 jam) / beda egress IP -> 403.
+// refresh=videoId: minta URL baru untuk itag yang sama, 1x retry.
+async function refreshFormatUrl(videoId: string, itag: number): Promise<string | null> {
+    try {
+        const played = await fetchYouTubePlayer(videoId);
+        const streamingData = played?.data?.streamingData || null;
+        if (!streamingData) return null;
+        const fmts = parseFormats(streamingData);
+        const hit = fmts.find((f) => Number(f.itag) === Number(itag) && f.url && !f.needs_decipher)
+            || fmts.find((f) => Number(f.itag) === Number(itag) && f.url);
+        return hit?.url || null;
+    } catch {
+        return null;
+    }
+}
+
 async function proxyMedia(req: Request, res: Response): Promise<void> {
     const dlParam = String(req.query.dl || '');
     const filename = String(req.query.fn || 'youtube.bin');
@@ -1245,15 +1273,30 @@ async function proxyMedia(req: Request, res: Response): Promise<void> {
     };
     if (range) headers.Range = String(range);
 
-    const upstream = await axios.get(mediaUrl, {
-        responseType: 'stream',
-        ...proxyConf(),
-        timeout: 30000,
-        decompress: false,
-        validateStatus: (s) => s < 400,
-        maxRedirects: 5,
-        headers,
-    });
+    let upstream: any = null;
+    let lastErr: any = null;
+    try {
+        upstream = await fetchUpstream(mediaUrl, headers);
+    } catch (err: any) {
+        lastErr = err;
+    }
+
+    if (!upstream && refresh) {
+        let itag = 0;
+        try { itag = Number(new URL(mediaUrl).searchParams.get('itag')) || 0; } catch { /* abaikan */ }
+        if (itag > 0) {
+            const fresh = await refreshFormatUrl(refresh, itag);
+            if (fresh && isAllowedMediaHost(fresh)) {
+                try {
+                    upstream = await fetchUpstream(fresh, headers);
+                } catch (err: any) {
+                    lastErr = err;
+                }
+            }
+        }
+    }
+
+    if (!upstream) throw lastErr || new Error('Gagal mengambil media');
 
     const h: any = upstream.headers || {};
     if (h['content-type']) res.setHeader('Content-Type', String(h['content-type']));
@@ -1262,7 +1305,6 @@ async function proxyMedia(req: Request, res: Response): Promise<void> {
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/["\\]/g, '')}"`);
     res.setHeader('Cache-Control', 'no-store');
-    void refresh;
 
     res.status(upstream.status);
     upstream.data.on('error', () => { try { res.end(); } catch { /* noop */ } });
