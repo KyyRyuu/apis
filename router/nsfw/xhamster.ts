@@ -27,8 +27,33 @@ const DEFAULT_HEADERS: Record<string, string> = {
     'User-Agent': UA,
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.9',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
     'Referer': BASE + '/',
 };
+
+// Sesi cookie: GET homepage dulu (kumpulkan set-cookie: consent/age-wall),
+// lalu pakai Cookie tersebut untuk /search & /videos. Tanpa ini IP/region
+// tertentu hanya dapat halaman cangkang (initials tanpa data).
+async function primeSession(): Promise<string> {
+    try {
+        const r = await axios.get(BASE + '/', {
+            headers: { ...DEFAULT_HEADERS, 'Sec-Fetch-Site': 'none' },
+            maxRedirects: 5,
+            timeout: 20000,
+            validateStatus: (s: number) => s < 500,
+            ...proxyConf(),
+        });
+        const sc = r.headers['set-cookie'];
+        if (Array.isArray(sc) && sc.length) {
+            return sc.map((c) => String(c).split(';')[0].trim()).filter(Boolean).join('; ');
+        }
+    } catch { /* abaikan, lanjut tanpa cookie */ }
+    return '';
+}
 
 const CDN_SUFFIXES = ['cdnsolutions.media'];
 
@@ -285,14 +310,31 @@ function decodeSources(sources: any, hostMap: any): any {
 
 // ---------- HTTP ----------
 
+let _sessionCookie: string | null = null;
+
 async function httpGet(url: string, headers: Record<string, string> = {}): Promise<any> {
+    if (_sessionCookie === null) _sessionCookie = await primeSession();
+    const withCookie = _sessionCookie
+        ? { Cookie: _sessionCookie, ...headers }
+        : headers;
     return withRetry(() => axios.get(url, {
-        headers: { ...DEFAULT_HEADERS, ...headers },
+        headers: { ...DEFAULT_HEADERS, ...withCookie },
         maxRedirects: 5,
         timeout: 45000,
         validateStatus: (s: number) => s >= 200 && s < 400,
         ...proxyConf(),
     }));
+}
+
+// Bedakan "query memang kosong" vs "halaman cangkang / wall" (initials ada
+// tapi tanpa data). Wall -> throw dengan daftar top-keys untuk diagnosa,
+// bukan success + 0 hasil yang menyesatkan.
+function wallError(o: any, mode: string): Error {
+    const keys = o ? Object.keys(o).slice(0, 40).join(',') : 'null';
+    return new Error(
+        `xhamster ${mode}: halaman ter-load tapi tanpa data (kemungkinan wall/verify region IP server). ` +
+        `Coba set env XHAMSTER_PROXY ke proxy residensial. initials keys: [${keys}]`
+    );
 }
 
 // ---------- HLS verification ----------
@@ -475,6 +517,9 @@ async function xhSearch(query: string, opts: any = {}): Promise<any> {
         for (const k of Object.keys(sr)) if (Array.isArray(sr[k])) { items = sr[k]; break; }
     }
 
+    // searchResult tidak ada sama sekali -> wall, bukan "query kosong".
+    if (sr === undefined && items.length === 0) throw wallError(o, 'search');
+
     const videos = items.map(normalizeVideoItem).filter(Boolean);
     const pg = o.pagination || {};
     const summary = o.searchTitleSummaryComponent || {};
@@ -521,6 +566,9 @@ async function xhVideo(inputUrl: string): Promise<any> {
     const vm = o.videoModel || {};
     const ve = o.videoEntity || {};
     const xp = o.xplayerSettings || {};
+
+    // videoModel + xplayerSettings dua-duanya kosong -> wall, bukan video privat.
+    if (!vm.id && !ve.id && !xp.sources) throw wallError(o, 'video');
 
     const durationSec = vm.duration ?? ve.duration ?? null;
     const ratingModel = o.ratingComponent?.ratingModel || {};
