@@ -47,6 +47,16 @@ const YOUTUBE_SAMPLES = [
   ['cth: shorts', 'https://youtube.com/shorts/s4AeeuCSSf8'],
   ['cth: music', 'https://music.youtube.com/watch?v=fFMPxt-XNIk']
 ];
+const YOUTUBE2_SAMPLES = [
+  ['cth: video', 'https://youtu.be/b-9tRgohoDQ'],
+  ['cth: shorts', 'https://youtube.com/shorts/s4AeeuCSSf8'],
+  ['cth: music', 'https://music.youtube.com/watch?v=fFMPxt-XNIk']
+];
+const YOUTUBE3_SAMPLES = [
+  ['cth: video', 'https://youtu.be/b-9tRgohoDQ'],
+  ['cth: shorts', 'https://youtube.com/shorts/s4AeeuCSSf8'],
+  ['cth: music', 'https://music.youtube.com/watch?v=fFMPxt-XNIk']
+];
 const TWITTER_SAMPLES = [
   ['cth: video', 'https://x.com/1alemikelam/status/2106459255695974810'],
   ['cth: foto', 'https://x.com/Baggie_Nsk/status/2106466624374997081'],
@@ -68,6 +78,8 @@ const TERABOX_SAMPLES = [
 const SAMPLE_MAP = {
   threads: THREAD_SAMPLES,
   youtube: YOUTUBE_SAMPLES,
+  youtube2: YOUTUBE2_SAMPLES,
+  youtube3: YOUTUBE3_SAMPLES,
   twitter: TWITTER_SAMPLES,
   tiktok: TIKTOK_SAMPLES,
   instagram: INSTAGRAM_SAMPLES,
@@ -449,6 +461,125 @@ function renderInstagram(j) {
     </div>`;
 }
 
+function renderYouTube2(j) {
+  const mp4s = ((j.cdn || {}).mp4 || []).filter((m) => m.url);
+  const mp3s = ((j.cdn || {}).mp3 || []).filter((m) => m.url);
+  const st = j.stats || {};
+  const cap = j.caption || {};
+  const au = j.author || {};
+  const ver = j.verification || {};
+  const type = (j.type || 'video').toUpperCase();
+  const vid = j.video_id || '';
+
+  const best = mp4s[mp4s.length - 1] || mp4s[0] || null;
+  const preview = (best && best.download && best.download.proxy) || null;
+  let player = '';
+  if (preview) player = `<div class="shot"><video controls preload="metadata" src="${esc(preview)}" poster="${esc(j.thumbnail || '')}"></video></div>`;
+  else if (j.thumbnail) player = `<div class="shot"><img loading="lazy" src="${esc(j.thumbnail)}" alt="thumbnail"></div>`;
+
+  const mp4Rows = mp4s.map((m) => {
+    const href = (m.download && m.download.proxy) || m.url;
+    const ok = m.download && m.download.ok;
+    return `<div class="yt-fmt"><span class="yt-lbl">${esc(m.quality || '')} MP4${ok === false ? ' <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i>' : ''}</span>${dlBtn(href, 'SAVE', fnameOf(href, `youtube2-${vid}.mp4`))}</div>`;
+  }).join('');
+  const mp3Rows = mp3s.map((m) => {
+    const href = (m.download && m.download.proxy) || m.url;
+    const ok = m.download && m.download.ok;
+    const extra = m.filesize ? ` • ${(m.filesize / 1048576).toFixed(1)}MB` : '';
+    return `<div class="yt-fmt"><span class="yt-lbl">${esc(m.bitrate || '')}${esc(extra)}${ok === false ? ' <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i>' : ''}</span>${dlBtn(href, 'SAVE', fnameOf(href, `youtube2-${vid}.mp3`))}</div>`;
+  }).join('');
+
+  const tags = [...(cap.hashtags || []).map((x) => '#' + x), ...(cap.mentions || []).map((x) => '@' + x)].join(' ');
+
+  return `
+    <div class="r-hd">
+      <div class="r-who">
+        <b>${esc(j.title || vid || 'YouTube')}</b>
+        <span>${esc(au.name || '')}${j.duration ? ` • ${esc(j.duration)}` : ''}${j.published_at ? ` • ${esc(String(j.published_at).slice(0, 10))}` : ''}</span>
+      </div>
+      <span class="typebadge">${esc(type)} • Y2</span>
+    </div>
+    <div class="r-stats">
+      <span><i class="fa-solid fa-eye"></i><b>${esc(st.view_formatted || fmtNum(st.view))}</b> views</span>
+      <span><i class="fa-solid fa-heart"></i><b>${esc(st.like_formatted || fmtNum(st.like))}</b> likes</span>
+      <span><i class="fa-solid fa-comment"></i><b>${esc(st.comment_formatted || fmtNum(st.comment))}</b> comments</span>
+      ${j.category ? `<span><i class="fa-solid fa-tag"></i><b>${esc(j.category)}</b></span>` : ''}
+    </div>
+    ${player ? `<div class="r-media one">${player}</div>` : ''}
+    <div class="yt-sec"><p class="yt-h">VIDEO MP4 (${mp4s.length}) — via y2meta</p><div class="yt-grid">${mp4Rows || '<p class="yt-empty">tidak ada format video</p>'}</div></div>
+    <div class="yt-sec"><p class="yt-h">AUDIO MP3 (${mp3s.length})</p><div class="yt-grid">${mp3Rows || '<p class="yt-empty">tidak ada format audio</p>'}</div></div>
+    ${cap.text ? `<p class="r-cap">${esc(cap.text.slice(0, 600))}${tags ? `\n\n${esc(tags)}` : ''}</p>` : ''}
+    <div class="r-actions">
+      <button class="btn sm" id="copyAllBtn" type="button"><i class="fa-solid fa-link"></i> COPY SEMUA LINK</button>
+      <a class="btn sm" href="${esc((j.links && j.links.watch) || '#')}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> OPEN YOUTUBE</a>
+    </div>
+    <div class="r-foot">
+      <span>CDN:</span>
+      <span class="${ver.all_ok ? 'vok' : 'vbad'}">${ver.all_ok ? 'ALL OK' : (ver.playable + '/' + ver.checked) + ' OK'}</span>
+      <span>• id ${esc(String(vid))}</span>
+    </div>`;
+}
+
+function renderYouTube3(j) {
+  const vids = ((j.cdn || {}).video || []).filter((m) => m.url);
+  const auds = ((j.cdn || {}).audio || []).filter((m) => m.url);
+  const st = j.stats || {};
+  const cap = j.caption || {};
+  const au = j.author || {};
+  const ver = j.verification || {};
+  const type = (j.type || 'video').toUpperCase();
+  const vid = j.video_id || '';
+
+  const best = vids[vids.length - 1] || vids[0] || null;
+  const preview = (best && best.download && best.download.proxy) || null;
+  let player = '';
+  if (preview) player = `<div class="shot"><video controls preload="metadata" src="${esc(preview)}" poster="${esc(j.thumbnail || '')}"></video></div>`;
+  else if (j.thumbnail) player = `<div class="shot"><img loading="lazy" src="${esc(j.thumbnail)}" alt="thumbnail"></div>`;
+
+  const vRows = vids.map((m) => {
+    const href = (m.download && m.download.proxy) || m.url;
+    const ok = m.download && m.download.ok;
+    const size = m.size ? ` • ${(m.size / 1048576).toFixed(1)}MB` : '';
+    return `<div class="yt-fmt"><span class="yt-lbl">${esc(m.quality || m.extension || 'video')}${esc(size)}${ok === false ? ' <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i>' : ''}</span>${dlBtn(href, 'SAVE', fnameOf(href, `youtube3-${vid}.mp4`))}</div>`;
+  }).join('');
+  const aRows = auds.map((m) => {
+    const href = (m.download && m.download.proxy) || m.url;
+    const ok = m.download && m.download.ok;
+    const size = m.size ? ` • ${(m.size / 1048576).toFixed(1)}MB` : '';
+    return `<div class="yt-fmt"><span class="yt-lbl">${esc(m.extension || 'audio')}${esc(size)}${ok === false ? ' <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i>' : ''}</span>${dlBtn(href, 'SAVE', fnameOf(href, `youtube3-${vid}.m4a`))}</div>`;
+  }).join('');
+
+  const tags = [...(cap.hashtags || []).map((x) => '#' + x), ...(cap.mentions || []).map((x) => '@' + x)].join(' ');
+
+  return `
+    <div class="r-hd">
+      <div class="r-who">
+        <b>${esc(j.title || vid || 'YouTube')}</b>
+        <span>${esc(au.name || '')}${j.duration ? ` • ${esc(j.duration)}` : ''}${j.published_at ? ` • ${esc(String(j.published_at).slice(0, 10))}` : ''}</span>
+      </div>
+      <span class="typebadge">${esc(type)} • Y3</span>
+    </div>
+    <div class="r-stats">
+      <span><i class="fa-solid fa-eye"></i><b>${esc(st.view_formatted || fmtNum(st.view))}</b> views</span>
+      <span><i class="fa-solid fa-heart"></i><b>${esc(st.like_formatted || fmtNum(st.like))}</b> likes</span>
+      <span><i class="fa-solid fa-comment"></i><b>${esc(st.comment_formatted || fmtNum(st.comment))}</b> comments</span>
+      ${st.engagement_rate ? `<span><i class="fa-solid fa-chart-line"></i><b>${esc(st.engagement_rate)}%</b> eng</span>` : ''}
+    </div>
+    ${player ? `<div class="r-media one">${player}</div>` : ''}
+    <div class="yt-sec"><p class="yt-h">VIDEO (${vids.length}) — via ytultra</p><div class="yt-grid">${vRows || '<p class="yt-empty">tidak ada format video</p>'}</div></div>
+    <div class="yt-sec"><p class="yt-h">AUDIO (${auds.length})</p><div class="yt-grid">${aRows || '<p class="yt-empty">tidak ada format audio</p>'}</div></div>
+    ${cap.text ? `<p class="r-cap">${esc(cap.text.slice(0, 600))}${tags ? `\n\n${esc(tags)}` : ''}</p>` : ''}
+    <div class="r-actions">
+      <button class="btn sm" id="copyAllBtn" type="button"><i class="fa-solid fa-link"></i> COPY SEMUA LINK</button>
+      <a class="btn sm" href="${esc((j.links && j.links.watch) || '#')}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> OPEN YOUTUBE</a>
+    </div>
+    <div class="r-foot">
+      <span>CDN:</span>
+      <span class="${ver.all_ok ? 'vok' : 'vbad'}">${ver.all_ok ? 'ALL OK' : (ver.playable + '/' + ver.checked) + ' OK'}</span>
+      <span>• id ${esc(String(vid))}</span>
+    </div>`;
+}
+
 function renderTerabox(j) {
   const files = j.files || [];
   const ver = j.verification || {};
@@ -491,6 +622,8 @@ function renderResult(j) {
   const isYouTube = j && (j.kind === 'video' || j.kind === 'post') && j.success === true;
   const kind = j && j.kind;
   box.innerHTML = kind === 'tweet' ? renderTwitter(j)
+    : kind === 'youtube2' ? renderYouTube2(j)
+    : kind === 'youtube3' ? renderYouTube3(j)
     : kind === 'tiktok' ? renderTikTok(j)
     : kind === 'instagram' ? renderInstagram(j)
     : kind === 'terabox' ? renderTerabox(j)
@@ -548,6 +681,8 @@ $('dlForm').addEventListener('submit', (e) => { e.preventDefault(); runSaver($('
 const DL_ICON = {
   threads: 'fa-solid fa-comment-dots',
   youtube: 'fa-brands fa-youtube',
+  youtube2: 'fa-solid fa-circle-play',
+  youtube3: 'fa-solid fa-circle-down',
   twitter: 'fa-brands fa-x-twitter',
   tiktok: 'fa-brands fa-tiktok',
   instagram: 'fa-brands fa-instagram',

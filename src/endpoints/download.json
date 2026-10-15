@@ -26,6 +26,32 @@
     ]
   },
   {
+    "name": "YouTube Downloader 2",
+    "endpoint": "/api/download/youtube2",
+    "filename": "youtube2",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "YouTube URL via y2meta CDN (watch / shorts / live / embed / music / youtu.be; post tidak didukung)"
+      }
+    ]
+  },
+  {
+    "name": "YouTube Downloader 3",
+    "endpoint": "/api/download/youtube3",
+    "filename": "youtube3",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "YouTube URL via ytultra CDN (watch / shorts / live / embed / music / youtu.be)"
+      }
+    ]
+  },
+  {
     "name": "Twitter Downloader",
     "endpoint": "/api/download/twitter",
     "filename": "twitter",
