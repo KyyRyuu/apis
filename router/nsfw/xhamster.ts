@@ -18,6 +18,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { fetchViaProxysite } from './proxysite-util';
 
 const BASE = 'https://xhamster.com';
 
@@ -507,17 +508,34 @@ async function xhSearch(query: string, opts: any = {}): Promise<any> {
     const url = `${BASE}/search/${q}${qs}`;
 
     const res = await httpGet(url);
-    const o = extractInitials(String(res.data));
+    let o = extractInitials(String(res.data));
     if (!o) throw new Error('window.initials not found (layout changed or blocked)');
+    let via = 'direct';
 
-    const sr = o.searchResult;
+    let sr = o.searchResult;
     let items: any[] = [];
     if (Array.isArray(sr)) items = sr;
     else if (sr && typeof sr === 'object') {
         for (const k of Object.keys(sr)) if (Array.isArray(sr[k])) { items = sr[k]; break; }
     }
 
-    // searchResult tidak ada sama sekali -> wall, bukan "query kosong".
+    // searchResult tidak ada sama sekali -> wall. Coba bypass via proxysite
+    // (egress IP berbeda) sebelum menyerah.
+    if (sr === undefined && items.length === 0) {
+        const px = await fetchViaProxysite(url);
+        if (px) {
+            const o2 = extractInitials(px.html);
+            const sr2 = o2?.searchResult;
+            let items2: any[] = [];
+            if (Array.isArray(sr2)) items2 = sr2;
+            else if (sr2 && typeof sr2 === 'object') {
+                for (const k of Object.keys(sr2)) if (Array.isArray(sr2[k])) { items2 = sr2[k]; break; }
+            }
+            if (sr2 !== undefined && items2.length > 0) {
+                o = o2; sr = sr2; items = items2; via = `proxysite:${px.server}`;
+            }
+        }
+    }
     if (sr === undefined && items.length === 0) throw wallError(o, 'search');
 
     const videos = items.map(normalizeVideoItem).filter(Boolean);
@@ -532,6 +550,7 @@ async function xhSearch(query: string, opts: any = {}): Promise<any> {
         scraped_at: startedAt,
         type: 'search',
         base: BASE,
+        via,
         query: String(query || '').trim(),
         source_url: url,
         result_count: summary.resultCount || null,
@@ -560,14 +579,28 @@ async function xhVideo(inputUrl: string): Promise<any> {
 
     const res = await httpGet(url);
     const finalUrl = res.request?.res?.responseUrl || url;
-    const o = extractInitials(String(res.data));
+    let o = extractInitials(String(res.data));
     if (!o) throw new Error('window.initials not found (layout changed or blocked)');
+    let via = 'direct';
 
-    const vm = o.videoModel || {};
-    const ve = o.videoEntity || {};
-    const xp = o.xplayerSettings || {};
+    let vm = o.videoModel || {};
+    let ve = o.videoEntity || {};
+    let xp = o.xplayerSettings || {};
 
-    // videoModel + xplayerSettings dua-duanya kosong -> wall, bukan video privat.
+    // videoModel + xplayerSettings dua-duanya kosong -> wall. Coba proxysite.
+    if (!vm.id && !ve.id && !xp.sources) {
+        const px = await fetchViaProxysite(url);
+        if (px) {
+            const o2 = extractInitials(px.html);
+            if (o2 && ((o2.videoModel?.id || o2.videoEntity?.id) || o2.xplayerSettings?.sources)) {
+                o = o2;
+                vm = o.videoModel || {};
+                ve = o.videoEntity || {};
+                xp = o.xplayerSettings || {};
+                via = `proxysite:${px.server}`;
+            }
+        }
+    }
     if (!vm.id && !ve.id && !xp.sources) throw wallError(o, 'video');
 
     const durationSec = vm.duration ?? ve.duration ?? null;
@@ -605,6 +638,7 @@ async function xhVideo(inputUrl: string): Promise<any> {
         scraped_at: startedAt,
         type: 'video',
         base: BASE,
+        via,
         source_url: inputUrl,
         final_url: finalUrl,
         source_domain: (() => { try { return new URL(finalUrl).hostname; } catch { return null; } })(),
