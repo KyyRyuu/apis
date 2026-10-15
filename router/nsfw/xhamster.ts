@@ -711,7 +711,9 @@ async function xhVideo(inputUrl: string): Promise<any> {
         cdn: pick({
             hls: hlsStreams.h264 || hlsStreams.av1 || undefined,
             hls_av1: hlsStreams.h264 ? hlsStreams.av1 : undefined,
-            note: 'mp4 langsung tidak disertakan (key di-bind ke IP server, 403 Wrong key untuk IP lain). Pakai HLS dengan header Referer: https://xhamster.com/',
+            note: via.startsWith('proxysite')
+                ? 'Via proxysite: HLS ter-bind ke IP server proxy sehingga tidak bisa dipakai langsung (lihat verification). Metadata, stats, komentar, tags & related tetap penuh.'
+                : 'mp4 langsung tidak disertakan (key di-bind ke IP server, 403 Wrong key untuk IP lain). Pakai HLS dengan header Referer: https://xhamster.com/',
         }),
         url: {
             hls: hlsStreams.h264?.master || hlsStreams.av1?.master || null,
