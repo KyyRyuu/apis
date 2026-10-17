@@ -24,5 +24,18 @@
         "description": "Query"
       }
     ]
+  },
+  {
+    "name": "DaFont Search",
+    "endpoint": "/api/search/dafont",
+    "filename": "dafont",
+    "method": "GET",
+    "params": [
+      {
+        "name": "q",
+        "required": true,
+        "description": "Keyword font (mis. ninja, horror, script)"
+      }
+    ]
   }
 ]

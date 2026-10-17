@@ -102,5 +102,96 @@
         "description": "Terabox share URL (terabox.com/…?surl=…)"
       }
     ]
+  },
+  {
+    "name": "Dailymotion Downloader",
+    "endpoint": "/api/download/dailymotion",
+    "filename": "dailymotion",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Dailymotion URL (dailymotion.com/video/… atau dai.ly/…)"
+      }
+    ]
+  },
+  {
+    "name": "Douyin Downloader",
+    "endpoint": "/api/download/douyin",
+    "filename": "douyin",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Link Douyin/TikTok CN (v.douyin.com/… atau douyin.com/video/…)"
+      }
+    ]
+  },
+  {
+    "name": "Likee Downloader",
+    "endpoint": "/api/download/likee",
+    "filename": "likee",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Link video Likee (likee.video/… atau likee.com/…)"
+      }
+    ]
+  },
+  {
+    "name": "MediaFire Downloader",
+    "endpoint": "/api/download/mediafire",
+    "filename": "mediafire",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Link share MediaFire (mediafire.com/file/…)"
+      }
+    ]
+  },
+  {
+    "name": "Pinterest Downloader",
+    "endpoint": "/api/download/pinterest",
+    "filename": "pinterest",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Link pin Pinterest (pinterest.com/pin/…)"
+      }
+    ]
+  },
+  {
+    "name": "Reddit Downloader",
+    "endpoint": "/api/download/reddit",
+    "filename": "reddit",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Link post Reddit (reddit.com/r/…/comments/…)"
+      }
+    ]
+  },
+  {
+    "name": "RedNote (Xiaohongshu) Downloader",
+    "endpoint": "/api/download/rednote",
+    "filename": "rednote",
+    "method": "GET",
+    "params": [
+      {
+        "name": "url",
+        "required": true,
+        "description": "Link Xiaohongshu/RedNote (xhslink.com/… atau xiaohongshu.com/…)"
+      }
+    ]
   }
 ]
