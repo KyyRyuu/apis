@@ -156,19 +156,6 @@
     ]
   },
   {
-    "name": "Pinterest Downloader",
-    "endpoint": "/api/download/pinterest",
-    "filename": "pinterest",
-    "method": "GET",
-    "params": [
-      {
-        "name": "url",
-        "required": true,
-        "description": "Link pin Pinterest (pinterest.com/pin/…)"
-      }
-    ]
-  },
-  {
     "name": "Reddit Downloader",
     "endpoint": "/api/download/reddit",
     "filename": "reddit",
