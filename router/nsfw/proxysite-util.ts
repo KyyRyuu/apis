@@ -132,14 +132,18 @@ function rawTlsGet(pageUrl: string, cookie: string, referer: string, timeoutMs =
     });
 }
 
-export async function fetchViaProxysite(targetUrl: string, maxServers = 3): Promise<{ html: string; server: string } | null> {
+export async function fetchViaProxysite(targetUrl: string, maxServers = 5): Promise<{ html: string; server: string } | null> {
     for (const server of pickServers(Math.min(maxServers, PS_SERVERS.length))) {
         const posted = await psPost(server, targetUrl);
-        if (!posted.ok || !posted.location) continue;
+        if (!posted.ok || !posted.location) {
+            await new Promise((r) => setTimeout(r, 300)); // jeda kecil antar attempt
+            continue;
+        }
         const body = await rawTlsGet(posted.location, posted.cookie ?? '', `https://${server}.proxysite.com/`);
         if (body && body.includes('window.initials') && !/Just a moment|cf-chl/i.test(body)) {
             return { html: body, server };
         }
+        await new Promise((r) => setTimeout(r, 300));
     }
     return null;
 }
