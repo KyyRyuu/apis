@@ -1,0 +1,40 @@
+[
+  {
+    "name": "XHamster (NSFW)",
+    "endpoint": "/api/nsfw/xhamster",
+    "filename": "xhamster",
+    "method": "GET",
+    "params": [
+      {
+        "name": "q",
+        "required": false,
+        "description": "Query pencarian (pakai q ATAU url; q berupa URL video akan otomatis jadi mode video)"
+      },
+      {
+        "name": "url",
+        "required": false,
+        "description": "URL video xhamster (mode video, prioritas di atas q)"
+      },
+      {
+        "name": "page",
+        "required": false,
+        "description": "Halaman pencarian (default 1)"
+      },
+      {
+        "name": "sort",
+        "required": false,
+        "description": "relevance|newest|views|best|longest"
+      },
+      {
+        "name": "min_quality",
+        "required": false,
+        "description": "Kualitas minimal, mis. 720p"
+      },
+      {
+        "name": "orientation",
+        "required": false,
+        "description": "straight|gay|shemale"
+      }
+    ]
+  }
+]
