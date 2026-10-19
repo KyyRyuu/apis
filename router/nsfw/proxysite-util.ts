@@ -44,7 +44,10 @@ function proxyConf(): Record<string, any> {
     }
 }
 
-async function psPost(server: string, target: string): Promise<{ location: string; cookie: string } | null> {
+type PsPostOk = { ok: true; status: number; location: string; cookie: string; snippet?: undefined };
+type PsPostFail = { ok: false; status: number; location?: undefined; cookie?: undefined; snippet: string };
+
+async function psPost(server: string, target: string): Promise<PsPostOk | PsPostFail> {
     const host = `https://${server}.proxysite.com`;
     try {
         const res = await axios.post(
@@ -64,15 +67,18 @@ async function psPost(server: string, target: string): Promise<{ location: strin
             }
         );
         const loc = res.headers.location;
+        const sc = res.headers['set-cookie'];
+        const cookie = Array.isArray(sc)
+            ? sc.map((c) => String(c).split(';')[0].trim()).filter(Boolean).join('; ')
+            : '';
         if ((res.status === 301 || res.status === 302) && loc) {
-            const sc = res.headers['set-cookie'];
-            const cookie = Array.isArray(sc)
-                ? sc.map((c) => String(c).split(';')[0].trim()).filter(Boolean).join('; ')
-                : '';
-            return { location: loc, cookie };
+            return { ok: true, status: res.status, location: loc, cookie };
         }
-    } catch { /* coba server lain */ }
-    return null;
+        const body = typeof res.data === 'string' ? res.data.replace(/\s+/g, ' ').slice(0, 160) : JSON.stringify(res.data).slice(0, 160);
+        return { ok: false, status: res.status, snippet: body };
+    } catch (e: any) {
+        return { ok: false, status: e?.response?.status ?? -1, snippet: 'ERR: ' + (e?.message || String(e)) };
+    }
 }
 
 // GET mentah via TLS: toleran terhadap status-line "103" palsu.
@@ -129,11 +135,30 @@ function rawTlsGet(pageUrl: string, cookie: string, referer: string, timeoutMs =
 export async function fetchViaProxysite(targetUrl: string, maxServers = 3): Promise<{ html: string; server: string } | null> {
     for (const server of pickServers(Math.min(maxServers, PS_SERVERS.length))) {
         const posted = await psPost(server, targetUrl);
-        if (!posted) continue;
-        const body = await rawTlsGet(posted.location, posted.cookie, `https://${server}.proxysite.com/`);
+        if (!posted.ok || !posted.location) continue;
+        const body = await rawTlsGet(posted.location, posted.cookie ?? '', `https://${server}.proxysite.com/`);
         if (body && body.includes('window.initials') && !/Just a moment|cf-chl/i.test(body)) {
             return { html: body, server };
         }
     }
     return null;
+}
+
+export async function debugViaProxysite(targetUrl: string, servers: string[] = ['us8', 'eu19', 'us4']): Promise<any[]> {
+    const out: any[] = [];
+    for (const server of servers) {
+        const posted = await psPost(server, targetUrl);
+        const info: any = { server, status: posted.status, ok: posted.ok };
+        if (posted.snippet) info.note = posted.snippet.trim();
+        if (posted.ok && posted.location) {
+            info.location_host = (() => { try { return new URL(posted.location).hostname; } catch { return null; } })();
+            info.has_cookie = !!posted.cookie;
+            const body = await rawTlsGet(posted.location, posted.cookie ?? '', `${`https://${server}.proxysite.com`}/`);
+            info.get = body
+                ? { ok: true, len: body.length, initials: body.includes('window.initials'), cf: /Just a moment|cf-chl/i.test(body) }
+                : { ok: false };
+        }
+        out.push(info);
+    }
+    return out;
 }

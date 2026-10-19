@@ -24,7 +24,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
-import { fetchViaProxysite } from './proxysite-util';
+import { fetchViaProxysite, debugViaProxysite } from './proxysite-util';
 
 const BASE = 'https://xhamster.com';
 
@@ -648,6 +648,13 @@ export default async function xhamsterHandler(req: Request, res: Response) {
                 error: "Parameter wajib: 'url' (video) atau 'q' (search)",
                 usage: '/api/nsfw/xhamster?q=<query>[&page&sort&min_quality&orientation] | /api/nsfw/xhamster?url=<video_url>',
             });
+        }
+
+        // debug: /api/nsfw/xhamster?q=...&debug=ps -> traceback tiap server proxysite
+        if (req.query.debug === 'ps') {
+            const servers = String(req.query.servers || 'us8,eu19,us4').split(',').map((s) => s.trim()).filter(Boolean);
+            const diagnostics = await debugViaProxysite(target, servers);
+            return res.json({ success: true, type: 'proxysite-debug', diagnostics });
         }
 
         // auto-detect: url -> video | q -> search
