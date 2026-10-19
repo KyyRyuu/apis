@@ -24,6 +24,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { fetchViaProxysite } from './proxysite-util';
 
 const BASE = 'https://xhamster.com';
 
@@ -356,13 +357,31 @@ async function search(query: string, opts: { page?: any; sort?: any; minQuality?
     const url = `${BASE}/search/${q}${qs}`;
 
     const res = await httpGet(url);
-    const o = extractInitials(res.data);
+    let o = extractInitials(res.data);
     if (!o) throw new Error('window.initials not found (layout changed or blocked)');
 
-    const sr = o.searchResult;
+    let sr = o.searchResult;
     let items: any[] = [];
     if (Array.isArray(sr)) items = sr;
-    else if (sr && typeof sr === 'object') {
+
+    let via = 'direct';
+    // searchResult tidak ada sama sekali -> wall (consent/geo, biasanya IP datacenter).
+    // Coba bypass via proxysite (egress IP berbeda) sebelum menyerah.
+    if (sr === undefined) {
+        const px = await fetchViaProxysite(url);
+        if (px) {
+            const o2 = extractInitials(px.html);
+            const sr2 = o2?.searchResult;
+            if (o2 && sr2 !== undefined) {
+                o = o2;
+                sr = o.searchResult;
+                items = Array.isArray(sr) ? sr : [];
+                via = `proxysite:${px.server}`;
+            }
+        }
+    }
+    if (sr === undefined) throw new Error('xhamster wall terdeteksi & fallback proxysite gagal');
+    else if (sr && typeof sr === 'object' && !Array.isArray(sr)) {
         for (const k of Object.keys(sr)) if (Array.isArray(sr[k])) { items = sr[k]; break; }
     }
 
@@ -380,6 +399,7 @@ async function search(query: string, opts: { page?: any; sort?: any; minQuality?
         base: BASE,
         query: String(query || '').trim(),
         source_url: url,
+        via,
         result_count: summary.resultCount || null,
         page_title: cleanText(summary.title),
         page: {
@@ -447,12 +467,30 @@ async function getVideo(inputUrl: string, _opts: Record<string, any> = {}) {
 
     const res = await httpGet(url);
     const finalUrl = (res.request?.res as any)?.responseUrl || url;
-    const o = extractInitials(res.data);
+    let o = extractInitials(res.data);
     if (!o) throw new Error('window.initials not found (layout changed or blocked)');
 
-    const vm = o.videoModel || {};
-    const ve = o.videoEntity || {};
-    const xp = o.xplayerSettings || {};
+    let via = 'direct';
+    let vm = o.videoModel || {};
+    let ve = o.videoEntity || {};
+    let xp = o.xplayerSettings || {};
+
+    // videoModel + xplayerSettings dua-duanya kosong -> wall (consent/geo, biasanya
+    // IP datacenter). Coba bypass via proxysite (egress IP berbeda) sebelum menyerah.
+    if (!vm.id && !ve.id && !xp.sources) {
+        const px = await fetchViaProxysite(url);
+        if (px) {
+            const o2 = extractInitials(px.html);
+            if (o2 && ((o2.videoModel?.id || o2.videoEntity?.id) || o2.xplayerSettings?.sources)) {
+                o = o2;
+                vm = o.videoModel || {};
+                ve = o.videoEntity || {};
+                xp = o.xplayerSettings || {};
+                via = `proxysite:${px.server}`;
+            }
+        }
+    }
+    if (!vm.id && !ve.id && !xp.sources) throw new Error('xhamster wall terdeteksi & fallback proxysite gagal');
 
     const durationSec = vm.duration ?? ve.duration ?? null;
     const ratingModel = o.ratingComponent?.ratingModel || {};
@@ -512,6 +550,7 @@ async function getVideo(inputUrl: string, _opts: Record<string, any> = {}) {
         base: BASE,
         source_url: inputUrl,
         final_url: finalUrl,
+        via,
         source_domain: (() => { try { return new URL(finalUrl).hostname; } catch { return null; } })(),
         id: vm.id ?? ve.id ?? null,
         id_slug: vm.idHashSlug ?? ve.idHashSlug ?? null,
