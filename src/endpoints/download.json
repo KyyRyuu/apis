@@ -167,18 +167,5 @@
         "description": "Link post Reddit (reddit.com/r/…/comments/…)"
       }
     ]
-  },
-  {
-    "name": "RedNote (Xiaohongshu) Downloader",
-    "endpoint": "/api/download/rednote",
-    "filename": "rednote",
-    "method": "GET",
-    "params": [
-      {
-        "name": "url",
-        "required": true,
-        "description": "Link Xiaohongshu/RedNote (xhslink.com/… atau xiaohongshu.com/…)"
-      }
-    ]
   }
 ]
