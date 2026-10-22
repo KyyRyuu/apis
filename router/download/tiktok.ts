@@ -10,6 +10,7 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { cdnLink } from '../../src/cdn';
 
 const PARSER_URL = 'https://snaptik.monster/';
 const UA_BROWSER = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36';
@@ -409,9 +410,7 @@ async function tiktokdl(inputUrl: string): Promise<any> {
 // ---------- proxy (header-free stream) ----------
 
 function proxyLink(req: Request, mediaUrl: string, filename: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/tiktok?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}`;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA_BROWSER, Referer: 'https://www.tiktok.com/' });
 }
 
 async function proxyMedia(req: Request, res: Response): Promise<void> {
@@ -482,8 +481,11 @@ export default async function tiktokHandler(req: Request, res: Response) {
             const m = /\.([a-z0-9]{2,4})(?:[?#]|$)/i.exec(String(u || ''));
             return m ? '.' + m[1].toLowerCase() : fallback;
         };
-        const wrap = (u: string | null, fn: string): any =>
-            u ? { url: u, proxy: proxyLink(req, u, fn), filename: fn } : null;
+        const wrap = (u: string | null, fn: string): any => {
+            if (!u) return null;
+            const link = proxyLink(req, u, fn);
+            return { url: link, proxy: link, filename: fn };
+        };
 
         r.download = {
             video: wrap(r.url.video, sanitizeName(`tiktok_${tag}_${r.id || 'video'}.mp4`)),
@@ -498,6 +500,23 @@ export default async function tiktokHandler(req: Request, res: Response) {
                 bundle: wrap(r.slideshow.bundle, sanitizeName(`tiktok_${tag}_slideshow.zip`)),
             } : null,
         };
+
+        r.url = {
+            ...r.url,
+            video: r.download.video?.url || null,
+            audio: r.download.audio?.url || null,
+            thumbnail: r.download.thumbnail?.url || null,
+            images: (r.download.images || []).map((x: any) => x.url),
+        };
+        if (r.download.videos) r.url.videos = r.download.videos.map((x: any) => x.url);
+        if (r.slideshow && r.download.slideshow) {
+            r.slideshow = {
+                ...r.slideshow,
+                video: r.download.slideshow.video?.url || null,
+                photos: r.download.slideshow.photos?.url || null,
+                bundle: r.download.slideshow.bundle?.url || null,
+            };
+        }
 
         res.json({ success: true, kind: 'tiktok', ...r });
     } catch (e) {

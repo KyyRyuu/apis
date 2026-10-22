@@ -9,6 +9,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const UA_CRAWLER = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
 const UA_BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -691,9 +692,7 @@ async function instagramDL(inputUrl: string): Promise<any> {
 // ---------- proxy (header-free stream) ----------
 
 function proxyLink(req: Request, mediaUrl: string, filename: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/instagram?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}`;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA_BROWSER, Referer: 'https://www.instagram.com/' });
 }
 
 async function proxyMedia(req: Request, res: Response): Promise<void> {
@@ -764,8 +763,11 @@ export default async function instagramHandler(req: Request, res: Response) {
             const m = /\.([a-z0-9]{2,4})(?:[?#]|$)/i.exec(String(u || ''));
             return m ? '.' + m[1].toLowerCase() : fallback;
         };
-        const wrap = (u: string | null, fn: string): any =>
-            u ? { url: u, proxy: proxyLink(req, u, fn), filename: fn } : null;
+        const wrap = (u: string | null, fn: string): any => {
+            if (!u) return null;
+            const link = proxyLink(req, u, fn);
+            return { url: link, proxy: link, filename: fn };
+        };
 
         r.download = {
             video: wrap(r.url.video, sanitizeName(`instagram_${tag}_${r.shortcode}.mp4`)),
@@ -777,6 +779,16 @@ export default async function instagramHandler(req: Request, res: Response) {
         if (r.url.image) r.download.picked = wrap(r.url.image, sanitizeName(`instagram_${tag}_${r.shortcode}_picked${extOf(r.url.image, '.jpg')}`));
         if (r.url.videos) r.download.videos = r.url.videos.map((u: string, i: number) =>
             wrap(u, sanitizeName(`instagram_${tag}_${r.shortcode}_v${i + 1}.mp4`)));
+
+        r.url = {
+            ...r.url,
+            video: r.download.video?.url || null,
+            audio: r.download.audio?.url || null,
+            thumbnail: r.download.thumbnail?.url || null,
+            image: r.download.picked?.url || null,
+            images: (r.download.images || []).map((x: any) => x.url),
+        };
+        if (r.download.videos) r.url.videos = r.download.videos.map((x: any) => x.url);
 
         res.json({ success: true, kind: 'instagram', ...r });
     } catch (e) {

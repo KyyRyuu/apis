@@ -14,6 +14,7 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { cdnLink } from '../../src/cdn';
 
 const BASE_EN3 = 'https://y2meta.nu/en3/';
 const BASE_CONVERT = 'https://y2meta.nu/convert/';
@@ -511,9 +512,8 @@ async function youtube2DL(inputUrl: string, opts: any = {}): Promise<any> {
 // ---------- proxy (header-free stream + refresh) ----------
 
 function proxyLink(req: Request, mediaUrl: string, filename: string, extra: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/youtube2?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}${extra}`;
+    void extra;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA_BROWSER, Referer: 'https://www.youtube.com/' });
 }
 
 async function fetchUpstream(mediaUrl: string, headers: Record<string, string>): Promise<any> {
@@ -621,20 +621,38 @@ export default async function youtube2Handler(req: Request, res: Response) {
         const vid = String(r.video_id || 'video');
         const tag = sanitizeName((r.title || vid).slice(0, 40));
 
+        const cdnMap = new Map<string, string>();
         const linkMp4 = (m: any): void => {
             if (!m.url) { m.download = { ...(m.download || {}), proxy: null }; return; }
             const q = String(m.videoQuality || '360');
             const fn = sanitizeName(`youtube2_${tag}_${vid}_${q}p.mp4`);
-            m.download = { ...(m.download || {}), proxy: proxyLink(req, m.url, fn, `&refresh=${vid}&qkind=mp4&q=${q}`), filename: fn };
+            const link = proxyLink(req, m.url, fn, `&refresh=${vid}&qkind=mp4&q=${q}`);
+            cdnMap.set(m.url, link);
+            m.url = link;
+            m.download = { ...(m.download || {}), proxy: link, filename: fn };
         };
         const linkMp3 = (m: any): void => {
             if (!m.url) { m.download = { ...(m.download || {}), proxy: null }; return; }
             const b = String(m.audioBitrate || '128');
             const fn = sanitizeName(`youtube2_${tag}_${vid}_${b}kbps.mp3`);
-            m.download = { ...(m.download || {}), proxy: proxyLink(req, m.url, fn, `&refresh=${vid}&qkind=mp3&q=${b}`), filename: fn };
+            const link = proxyLink(req, m.url, fn, `&refresh=${vid}&qkind=mp3&q=${b}`);
+            cdnMap.set(m.url, link);
+            m.url = link;
+            m.download = { ...(m.download || {}), proxy: link, filename: fn };
         };
         (r.cdn.mp4 || []).forEach(linkMp4);
         (r.cdn.mp3 || []).forEach(linkMp3);
+        if (r.url) {
+            if (r.url.mp4_best) r.url.mp4_best = cdnMap.get(r.url.mp4_best) || r.url.mp4_best;
+            if (r.url.mp3_best) r.url.mp3_best = cdnMap.get(r.url.mp3_best) || r.url.mp3_best;
+        }
+
+        const linkMap = new Map<string, string>();
+        (r.cdn.mp4 || []).forEach((m: any) => { if (m.url) linkMap.set(`mp4:${m.videoQuality}`, m.url); });
+        (r.cdn.mp3 || []).forEach((m: any) => { if (m.url) linkMap.set(`mp3:${m.audioBitrate}`, m.url); });
+        for (const d of r.verification?.details || []) {
+            d.url = linkMap.get(`${d.kind}:${d.label}`) || null;
+        }
 
         res.json({ success: true, kind: 'youtube2', ...r });
     } catch (e) {

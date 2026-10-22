@@ -15,6 +15,7 @@ import axios from 'axios';
 import { URL } from 'url';
 import * as https from 'https';
 import * as dns from 'dns';
+import { cdnLinkAt } from '../../src/cdn';
 
 const UA_BROWSER = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36';
 const UA_ANDROID = 'com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip';
@@ -423,10 +424,8 @@ function safeName(text: string): string {
 }
 
 function proxyUrl(baseUrl: string, mediaUrl: string, filename: string, refresh?: string): string {
-    const dl = b64urlEncode(mediaUrl);
-    let out = `${baseUrl}/api/download/youtube?dl=${dl}&fn=${encodeURIComponent(filename)}`;
-    if (refresh) out += `&refresh=${encodeURIComponent(refresh)}`;
-    return out;
+    void refresh;
+    return cdnLinkAt(baseUrl, mediaUrl, filename, { 'User-Agent': UA_BROWSER, Referer: 'https://www.youtube.com/' });
 }
 
 async function youtubePostDL(inputUrl: string, baseUrl?: string): Promise<any> {
@@ -488,10 +487,14 @@ async function youtubePostDL(inputUrl: string, baseUrl?: string): Promise<any> {
     for (const u of images) checks.push(await verifyImageUrl(u));
     const okCount = checks.filter((c) => c.ok).length;
 
+    const cdnImages = images.map((u, i) => baseUrl
+        ? proxyUrl(baseUrl, u, `${safeName(microformat?.title || postId)}_${i + 1}.${checks[i]?.container || 'jpg'}`)
+        : u);
+
     const imgList = images.map((u, i) => ({
         index: i + 1,
-        url: u,
-        proxy: baseUrl ? proxyUrl(baseUrl, u, `${safeName(microformat?.title || postId)}_${i + 1}.${checks[i]?.container || 'jpg'}`) : null,
+        url: cdnImages[i],
+        proxy: cdnImages[i],
         download: checks[i],
     }));
 
@@ -513,10 +516,10 @@ async function youtubePostDL(inputUrl: string, baseUrl?: string): Promise<any> {
         },
         published_text: publishedText,
         url: {
-            image: images[0] || null,
-            images,
+            image: cdnImages[0] || null,
+            images: cdnImages,
             image_list: imgList,
-            ...(images.length > 1 ? { slides: images } : {}),
+            ...(cdnImages.length > 1 ? { slides: cdnImages } : {}),
             thumbnail: bestThumb?.url || null,
         },
         stats: {
@@ -1169,34 +1172,42 @@ export async function youtubeDL(inputUrl: string, baseUrl?: string, diag?: any[]
     const title = videoDetails.title || prim.title || null;
     const safeTitle = safeName(title || videoId);
 
-    const withProxy = (check: any, f: any, isAudio: boolean) => {
-        if (!baseUrl || !f?.url) return check;
+    const linkFor = (f: any, isAudio: boolean): string | null => {
+        if (!baseUrl || !f?.url) return null;
         const ext = extFromMime(f.mimeType, isAudio);
         const tag = (!isAudio && f.quality) ? `_${String(f.quality).replace(/\s+/g, '')}` : `_${f.itag}`;
-        return { ...check, proxy: proxyUrl(baseUrl, f.url, `${safeTitle}${tag}.${ext}`, videoId) };
+        return proxyUrl(baseUrl, f.url, `${safeTitle}${tag}.${ext}`);
     };
 
-    const fmtVideo = (f: any) => ({
-        itag: f.itag,
-        quality: f.quality,
-        resolution: f.width && f.height ? `${f.width}x${f.height}` : null,
-        mime: f.mimeType,
-        codec: f.codecs,
-        fps: f.fps ?? null,
-        bitrate: f.bitrate ?? null,
-        size: f.contentLength ?? null,
-        url: f.url,
-        download: withProxy(dl(f.itag), f, false),
-    });
-    const fmtAudio = (f: any) => ({
-        itag: f.itag,
-        mime: f.mimeType,
-        codec: f.codecs,
-        bitrate: f.bitrate ?? null,
-        size: f.contentLength ?? null,
-        url: f.url,
-        download: withProxy(dl(f.itag), f, true),
-    });
+    const fmtVideo = (f: any) => {
+        const mediaLink = linkFor(f, false);
+        const check = dl(f.itag);
+        return {
+            itag: f.itag,
+            quality: f.quality,
+            resolution: f.width && f.height ? `${f.width}x${f.height}` : null,
+            mime: f.mimeType,
+            codec: f.codecs,
+            fps: f.fps ?? null,
+            bitrate: f.bitrate ?? null,
+            size: f.contentLength ?? null,
+            url: mediaLink || f.url,
+            download: mediaLink ? { ...check, proxy: mediaLink } : check,
+        };
+    };
+    const fmtAudio = (f: any) => {
+        const mediaLink = linkFor(f, true);
+        const check = dl(f.itag);
+        return {
+            itag: f.itag,
+            mime: f.mimeType,
+            codec: f.codecs,
+            bitrate: f.bitrate ?? null,
+            size: f.contentLength ?? null,
+            url: mediaLink || f.url,
+            download: mediaLink ? { ...check, proxy: mediaLink } : check,
+        };
+    };
 
     const allChecks = [...checkMap.values()];
     const okCount = allChecks.filter((c) => c.ok).length;

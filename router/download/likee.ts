@@ -7,6 +7,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const API_URL = 'https://likeedownloader.com/process';
 const UA = 'Mozilla/5.0 (Linux; Android 10)';
@@ -56,12 +57,18 @@ export default async function likeeHandler(req: Request, res: Response) {
         const thumb = html.match(/<img[^>]+src="([^"]+)"/i)?.[1] || null;
         const stats = html.match(/(\d{1,3}(?:[.,]\d+)?\s*[KMB]?)[^<]*\b(?:views|likes?|plays?)\b/i)?.[1] || null;
 
+        const mediaHeaders = { 'User-Agent': UA, Referer: 'https://likee.video/' };
+        const withWatermarkLink = withWatermark
+            ? cdnLink(req, withWatermark, 'likee_with_watermark.mp4', mediaHeaders) : null;
+        const withoutWatermarkLink = withoutWatermark
+            ? cdnLink(req, withoutWatermark, 'likee_no_watermark.mp4', mediaHeaders) : null;
+
         res.json({
             success: true,
             kind: 'likee',
             thumbnail: thumb,
-            with_watermark: withWatermark,
-            without_watermark: withoutWatermark,
+            with_watermark: withWatermarkLink,
+            without_watermark: withoutWatermarkLink,
             stats,
         });
     } catch (e) {

@@ -10,6 +10,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const BASE = 'https://www.ytultra.com/en/youtube-video-downloader/';
 const API = 'https://api.ytultra.com/ikool/youtube';
@@ -311,9 +312,8 @@ async function youtube3DL(inputUrl: string, opts: any = {}): Promise<any> {
 // ---------- proxy (header-free stream + refresh) ----------
 
 function proxyLink(req: Request, mediaUrl: string, filename: string, extra: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/youtube3?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}${extra}`;
+    void extra;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA_BROWSER, Referer: 'https://www.youtube.com/' });
 }
 
 async function fetchUpstream(mediaUrl: string, headers: Record<string, string>): Promise<any> {
@@ -421,10 +421,20 @@ export default async function youtube3Handler(req: Request, res: Response) {
             const ext = m.extension || (m.quality ? 'mp4' : 'm4a');
             const fn = sanitizeName(`youtube3_${tag}_${vid}_${label}.${ext}`);
             const extra = `&refresh=${vid}&ritag=${m.itag || 0}`;
-            m.download = { ...(m.download || {}), proxy: proxyLink(req, m.url, fn, extra), filename: fn };
+            const link = proxyLink(req, m.url, fn, extra);
+            m.url = link;
+            m.download = { ...(m.download || {}), proxy: link, filename: fn };
         };
         (r.cdn.video || []).forEach(linkItem);
         (r.cdn.audio || []).forEach(linkItem);
+
+        const itagMap = new Map<number, string>();
+        [...(r.cdn.video || []), ...(r.cdn.audio || [])].forEach((m: any) => {
+            if (m.url && m.itag) itagMap.set(Number(m.itag), m.url);
+        });
+        for (const d of r.verification?.details || []) {
+            d.url = itagMap.get(Number(d.itag)) || null;
+        }
 
         res.json({ success: true, kind: 'youtube3', ...r });
     } catch (e) {

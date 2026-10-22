@@ -9,6 +9,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const UA_MOBILE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const UA_BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -443,6 +444,19 @@ export default async function threadsHandler(req: Request, res: Response) {
 
     try {
         const result = await threadsDL(url);
+        const tag = String(result.code || result.post_id || 'threads');
+        const extOf = (u: string, fallback: string): string => {
+            const m = /\.([a-z0-9]{2,4})(?:[?#]|$)/i.exec(String(u || ''));
+            return m ? `.${m[1].toLowerCase()}` : fallback;
+        };
+        if (result.url) {
+            const u = result.url;
+            if (u.video) u.video = cdnLink(req, u.video, `threads_${tag}_video${extOf(u.video, '.mp4')}`, cdnHeaders());
+            if (Array.isArray(u.videos)) u.videos = u.videos.map((v: string, i: number) => cdnLink(req, v, `threads_${tag}_video_${i + 1}${extOf(v, '.mp4')}`, cdnHeaders()));
+            if (u.audio) u.audio = cdnLink(req, u.audio, `threads_${tag}_audio${extOf(u.audio, '.mp3')}`, cdnHeaders());
+            if (Array.isArray(u.audios)) u.audios = u.audios.map((v: string, i: number) => cdnLink(req, v, `threads_${tag}_audio_${i + 1}${extOf(v, '.mp3')}`, cdnHeaders()));
+            if (Array.isArray(u.images)) u.images = u.images.map((v: string, i: number) => cdnLink(req, v, `threads_${tag}_img_${i + 1}${extOf(v, '.jpg')}`, cdnHeaders()));
+        }
         return res.json(result);
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Internal Server Error';

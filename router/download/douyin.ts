@@ -7,6 +7,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const API_URL = 'https://snapvideotools.com/api/snap';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
@@ -40,17 +41,21 @@ export default async function douyinHandler(req: Request, res: Response) {
             throw new Error((r.data && ((r.data as any).message || (r.data as any).error)) || 'Data tidak ditemukan');
         }
 
-        const video = data.mediaUrls.find((m: any) => m.type === 'video');
-        const audio = data.mediaUrls.find((m: any) => m.type === 'audio');
+        const mediaHeaders = { 'User-Agent': UA, Referer: 'https://www.douyin.com/' };
+        const medias = (data.mediaUrls as any[]).map((m: any, i: number) => {
+            if (!m?.url) return m;
+            const ext = m.type === 'audio' ? 'mp3' : 'mp4';
+            return { ...m, url: cdnLink(req, m.url, `douyin_${i + 1}_${m.type || 'media'}.${ext}`, mediaHeaders) };
+        });
 
         res.json({
             success: true,
             kind: 'douyin',
             title: data.title ?? null,
             platform: data.platformName ?? 'douyin',
-            video: video ? video.url : null,
-            audio: audio ? audio.url : null,
-            medias: data.mediaUrls,
+            video: medias.find((m: any) => m.type === 'video')?.url ?? null,
+            audio: medias.find((m: any) => m.type === 'audio')?.url ?? null,
+            medias,
         });
     } catch (e) {
         res.status(500).json({ success: false, error: (e as any).message || 'Internal error' });

@@ -9,6 +9,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const API_URL = 'https://sechno.com/api/terabox';
 const TOOL_URL = 'https://sechno.com/tools/terabox-downloader';
@@ -190,9 +191,7 @@ async function teraboxdl(inputUrl: string): Promise<any> {
 // ---------- proxy (header-free stream) ----------
 
 function proxyLink(req: Request, mediaUrl: string, filename: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/terabox?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}`;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA_BROWSER, Referer: 'https://www.terabox.com/' });
 }
 
 async function proxyMedia(req: Request, res: Response): Promise<void> {
@@ -260,11 +259,14 @@ export default async function teraboxHandler(req: Request, res: Response) {
         const r = await teraboxdl(input);
         r.files = (r.files || []).map((f: any) => {
             const fn = sanitizeName(f.filename || r.title || 'terabox');
-            return { ...f, download: f.url ? { proxy: proxyLink(req, f.url, fn), filename: fn } : null };
+            const link = f.url ? proxyLink(req, f.url, fn) : null;
+            return { ...f, url: link || f.url, download: link ? { proxy: link, filename: fn } : null };
         });
         if (r.url) {
             const fn = sanitizeName(r.title || r.files?.[0]?.filename || 'terabox');
-            r.download = { proxy: proxyLink(req, r.url, fn), filename: fn };
+            const link = proxyLink(req, r.url, fn);
+            r.url = link;
+            r.download = { proxy: link, filename: fn };
         }
 
         res.json({ success: true, kind: 'terabox', ...r });

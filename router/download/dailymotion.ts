@@ -9,6 +9,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const API_URL = 'https://vidomon.com/wp-json/aio-dl/video-data/';
 const TOOL_URL = 'https://vidomon.com/dailymotion-video-downloader/';
@@ -180,9 +181,7 @@ async function dailymotiondl(inputUrl: string): Promise<any> {
 // ---------- proxy (header-free stream) ----------
 
 function proxyLink(req: Request, mediaUrl: string, filename: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/dailymotion?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}`;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA, Referer: 'https://www.dailymotion.com/' });
 }
 
 async function proxyMedia(req: Request, res: Response): Promise<void> {
@@ -247,12 +246,16 @@ export default async function dailymotionHandler(req: Request, res: Response) {
         const r = await dailymotiondl(input);
         const fn = sanitizeName(String(r.title || 'video'));
 
-        r.medias = (r.medias || []).map((m: any) => ({
-            ...m,
-            download: m.url ? { proxy: proxyLink(req, m.url, `${fn}_${m.quality || 'src'}.${m.extension || 'mp4'}`) } : null,
-        }));
+        r.medias = (r.medias || []).map((m: any) => {
+            const name = `${fn}_${m.quality || 'src'}.${m.extension || 'mp4'}`;
+            const link = m.url ? proxyLink(req, m.url, name) : null;
+            return { ...m, url: link || m.url, download: link ? { proxy: link } : null };
+        });
         if (r.url) {
-            r.download = { proxy: proxyLink(req, r.url, `${fn}_${r.quality || 'video'}.mp4`), filename: `${fn}_${r.quality || 'video'}.mp4` };
+            const name = `${fn}_${r.quality || 'video'}.mp4`;
+            const link = proxyLink(req, r.url, name);
+            r.url = link;
+            r.download = { proxy: link, filename: name };
         }
 
         res.json({ kind: 'dailymotion', ...r });

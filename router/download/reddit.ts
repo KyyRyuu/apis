@@ -8,6 +8,7 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { cdnLink } from '../../src/cdn';
 
 const API_URL = 'https://redvid.io/fetch';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
@@ -64,11 +65,20 @@ export default async function redditHandler(req: Request, res: Response) {
             throw new Error('Tidak ada media yang ditemukan pada post ini');
         }
 
+        const mediaHeaders = { 'User-Agent': UA, Referer: 'https://redvid.io/' };
+        const cdnResults = results.map((r: any) => ({
+            ...r,
+            thumbnail: r.thumbnail
+                ? cdnLink(req, r.thumbnail, `reddit_${r.item}_thumb.jpg`, mediaHeaders)
+                : null,
+            download_url: cdnLink(req, r.download_url, `reddit_${r.item}.${r.type === 'video' ? 'mp4' : 'jpg'}`, mediaHeaders),
+        }));
+
         res.json({
             success: true,
             kind: 'reddit',
             title: $('.response-cinema-title').text().trim() || null,
-            results,
+            results: cdnResults,
         });
     } catch (e) {
         res.status(500).json({ success: false, error: (e as any).message || 'Internal error' });

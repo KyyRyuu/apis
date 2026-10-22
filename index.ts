@@ -14,6 +14,7 @@ import fs from 'fs';
 import os from 'os';
 import { rateLimit } from './src/middleware/rateLimit';
 import { errorHandler } from './src/middleware/errorHandler';
+import { cdnHandler } from './src/cdn';
 import {
     loadRouter,
     initAutoLoad,
@@ -140,6 +141,7 @@ const logRequest = (req: Request, res: Response) => {
         '/src',
         '/docs',
         '/config',
+        '/cdn',
         '/favicon.ico',
         '/',
         '/landing'
@@ -177,6 +179,7 @@ app.use('/src', (req: Request, res: Response, next: NextFunction) => {
     next();
 }, express.static(path.join(process.cwd(), 'src')));
 
+app.get('/cdn/:file', cdnHandler); // cache media 30 menit (di luar rate limit request API)
 app.use(rateLimit); // rate limiter
 loadRouter(app, config); // endpoints router
 

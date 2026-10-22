@@ -9,6 +9,7 @@
  */
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { cdnLink } from '../../src/cdn';
 
 const UA_BROWSER =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -551,9 +552,7 @@ async function scrapeTwitter(input: string): Promise<any> {
 // ---------- proxy (header-free stream) ----------
 
 function proxyLink(req: Request, mediaUrl: string, filename: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/twitter?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}`;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA_BROWSER, Referer: 'https://x.com/' });
 }
 
 async function proxyMedia(req: Request, res: Response): Promise<void> {
@@ -642,6 +641,43 @@ export default async function twitterHandler(req: Request, res: Response) {
                 v.download = { proxy: proxyLink(req, v.url, vfn), filename: vfn };
             });
         });
+
+        const cdnMap = new Map<string, string>();
+        r.media.forEach((m: any) => {
+            if (m.download?.proxy && m.cdn_url) cdnMap.set(m.cdn_url, m.download.proxy);
+            (m.variants || []).forEach((v: any) => {
+                if (v.download?.proxy && v.url) cdnMap.set(v.url, v.download.proxy);
+            });
+        });
+        r.media.forEach((m: any) => {
+            if (m.cdn_url) m.cdn_url = cdnMap.get(m.cdn_url) || m.cdn_url;
+            (m.variants || []).forEach((v: any) => {
+                if (v.url) v.url = cdnMap.get(v.url) || v.url;
+            });
+        });
+        if (r.cdn) {
+            r.cdn.best = cdnMap.get(r.cdn.best) || null;
+            r.cdn.hd = cdnMap.get(r.cdn.hd) || null;
+        }
+
+        r.media.forEach((m: any) => {
+            m.variants = (m.variants || []).filter((v: any) => v.type === 'mp4');
+            if (m.thumbnail) {
+                const tfn = sanitizeName(`twitter_${uname}_${tid}_${m.index}_thumb${extOf(m.thumbnail, '.jpg')}`);
+                m.thumbnail = proxyLink(req, m.thumbnail, tfn);
+            }
+        });
+        if (r.tweet?.author?.avatar) {
+            r.tweet.author.avatar = proxyLink(
+                req,
+                r.tweet.author.avatar,
+                sanitizeName(`twitter_${uname}_avatar.jpg`),
+            );
+        }
+        if (r.cdn) {
+            const firstThumb = r.media.find((m: any) => m.thumbnail)?.thumbnail;
+            if (firstThumb) r.cdn.thumbnail = firstThumb;
+        }
 
         res.json({ success: true, kind: 'tweet', type, ...r });
     } catch (e) {

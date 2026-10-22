@@ -9,6 +9,7 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { cdnLink } from '../../src/cdn';
 
 const UA = 'Mozilla/5.0';
 const PROXY_ORIGIN = 'https://www.mediafire.com/';
@@ -70,9 +71,7 @@ function isAllowedMediaHost(mediaUrl: string): boolean {
 }
 
 function proxyLink(req: Request, mediaUrl: string, filename: string): string {
-    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-    const host = String(req.headers['x-forwarded-host'] || req.get('host'));
-    return `${proto}://${host}/api/download/mediafire?dl=${b64urlEncode(mediaUrl)}&fn=${encodeURIComponent(filename)}`;
+    return cdnLink(req, mediaUrl, filename, { 'User-Agent': UA, Referer: PROXY_ORIGIN });
 }
 
 async function proxyMedia(req: Request, res: Response): Promise<void> {
@@ -149,14 +148,17 @@ export default async function mediafireHandler(req: Request, res: Response) {
         const ext = (link.split('/').pop()?.split('?')[0]?.split('.').pop() || 'bin').toLowerCase();
         const filename = sanitizeName(`${title}.${ext}`);
 
+        const rawLink = link;
+        const cdnUrl = proxyLink(req, rawLink, filename);
+
         res.json({
             success: true,
             kind: 'mediafire',
             meta: { title, images, description },
             size,
             mimetype,
-            link,
-            download: { proxy: proxyLink(req, link, filename), filename },
+            link: cdnUrl,
+            download: { proxy: cdnUrl, filename },
         });
     } catch (e) {
         res.status(500).json({ success: false, error: (e as any).message || 'Internal error' });
